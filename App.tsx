@@ -1,21 +1,43 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FileUpload from './components/FileUpload';
 import EvaluationReportView from './components/EvaluationReportView';
-import { UploadedFile, EvaluationReport } from './types';
+import Dashboard from './components/Dashboard';
+import { UploadedFile, EvaluationReport, HistoryItem } from './types';
 import { evaluateAnswerSheet } from './services/geminiService';
 
-// Reduced to 3MB to stay within safe Base64 limits for multiple files
 const MAX_FILE_SIZE_MB = 3;
+const STORAGE_KEY = 'edugrade_history';
+
+type ViewMode = 'uploader' | 'dashboard' | 'report';
 
 const App: React.FC = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>('uploader');
   const [qpFiles, setQpFiles] = useState<UploadedFile[]>([]);
   const [keyFiles, setKeyFiles] = useState<UploadedFile[]>([]);
   const [studentFiles, setStudentFiles] = useState<UploadedFile[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
-  const [report, setReport] = useState<EvaluationReport | null>(null);
+  const [currentReport, setCurrentReport] = useState<EvaluationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // Load history from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        setHistory(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse history", e);
+      }
+    }
+  }, []);
+
+  // Save history to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  }, [history]);
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -26,31 +48,57 @@ const App: React.FC = () => {
     });
   };
 
+  const simulateProgress = async (fileId: string, type: 'qp' | 'key' | 'student') => {
+    const updateProgress = (p: number) => {
+      // Fix: Added explicit return type and cast status property to satisfy the union type defined in UploadedFile
+      const updater = (prev: UploadedFile[]): UploadedFile[] => 
+        prev.map(f => f.file.name === fileId ? { 
+          ...f, 
+          progress: p, 
+          status: (p === 100 ? 'complete' : 'uploading') as 'uploading' | 'complete' | 'error' 
+        } : f);
+      
+      if (type === 'qp') setQpFiles(updater);
+      else if (type === 'key') setKeyFiles(updater);
+      else setStudentFiles(updater);
+    };
+
+    for (let p = 0; p <= 100; p += 10) {
+      updateProgress(p);
+      await new Promise(r => setTimeout(r, 100));
+    }
+  };
+
   const handleFileSelection = (type: 'qp' | 'key' | 'student') => async (files: File[]) => {
     setError(null);
     const validFiles = files.filter(f => {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setError(`File "${f.name}" is too large. Please keep each file under ${MAX_FILE_SIZE_MB}MB.`);
+        setError(`File "${f.name}" exceeds ${MAX_FILE_SIZE_MB}MB.`);
         return false;
       }
       return true;
     });
 
-    if (validFiles.length === 0) return;
+    const newUploaded = await Promise.all(validFiles.map(async (file) => {
+      const preview = await fileToBase64(file);
+      return {
+        file,
+        preview,
+        progress: 0,
+        status: 'uploading' as const
+      };
+    }));
 
-    const uploaded = await Promise.all(validFiles.map(async (file) => ({
-      file,
-      preview: await fileToBase64(file)
-    })));
+    if (type === 'qp') setQpFiles(prev => [...prev, ...newUploaded]);
+    if (type === 'key') setKeyFiles(prev => [...prev, ...newUploaded]);
+    if (type === 'student') setStudentFiles(prev => [...prev, ...newUploaded]);
 
-    if (type === 'qp') setQpFiles(prev => [...prev, ...uploaded]);
-    if (type === 'key') setKeyFiles(prev => [...prev, ...uploaded]);
-    if (type === 'student') setStudentFiles(prev => [...prev, ...uploaded]);
+    newUploaded.forEach(f => simulateProgress(f.file.name, type));
   };
 
   const runEvaluation = async () => {
     if (qpFiles.length === 0 || studentFiles.length === 0) {
-      setError("Please upload both the Question Paper and the Student Answer Sheet.");
+      setError("Please upload Question Paper and Student Answer Sheet.");
       return;
     }
 
@@ -63,142 +111,156 @@ const App: React.FC = () => {
       const studentBase64 = studentFiles.map(f => f.preview);
 
       const result = await evaluateAnswerSheet(qpBase64, keyBase64, studentBase64);
-      setReport(result);
+      
+      const newHistoryItem: HistoryItem = {
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        report: result
+      };
+
+      setHistory(prev => [newHistoryItem, ...prev]);
+      setCurrentReport(result);
+      setViewMode('report');
     } catch (err: any) {
-      console.error("Evaluation error:", err);
-      setError(err.message || "An unexpected error occurred during processing.");
+      setError(err.message || "Processing failed. Check file clarity.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const reset = () => {
+  const deleteFromHistory = (id: string) => {
+    if (confirm("Delete this report permanently?")) {
+      setHistory(prev => prev.filter(h => h.id !== id));
+    }
+  };
+
+  const viewHistoricReport = (item: HistoryItem) => {
+    setCurrentReport(item.report);
+    setViewMode('report');
+  };
+
+  const startNew = () => {
     setQpFiles([]);
     setKeyFiles([]);
     setStudentFiles([]);
-    setReport(null);
+    setCurrentReport(null);
+    setViewMode('uploader');
     setError(null);
   };
 
-  if (report) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-6 md:p-12">
-        <div className="max-w-6xl mx-auto">
-          <EvaluationReportView report={report} onReset={reset} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-white font-sans">
-      <nav className="border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 bg-white z-10 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">E</div>
-          <span className="text-xl font-bold text-slate-800 tracking-tight">EduGrade AI</span>
+    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-100 selection:text-blue-900">
+      <nav className="border-b border-slate-200/60 px-8 py-5 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-40">
+        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setViewMode('uploader')}>
+          <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 transform group-hover:rotate-6 transition-transform">E</div>
+          <div>
+            <span className="text-lg font-black text-slate-900 tracking-tight block leading-none">EduGrade AI</span>
+            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Examiner v3.0</span>
+          </div>
         </div>
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Flash Engine Active</span>
+        
+        <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl no-print">
+          <button 
+            onClick={() => setViewMode('uploader')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'uploader' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            New
+          </button>
+          <button 
+            onClick={() => setViewMode('dashboard')}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Dashboard
+          </button>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
-            Answer Sheet Evaluation
-          </h1>
-          <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            Upload scans of question papers and student handwriting for instant, fair, and detailed grading.
-          </p>
-        </div>
-
-        <div className="space-y-8 bg-white p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FileUpload 
-              label="Question Paper" 
-              required 
-              files={qpFiles} 
-              onFilesSelected={handleFileSelection('qp')} 
-            />
-            <FileUpload 
-              label="Answer Key (Optional)" 
-              files={keyFiles} 
-              onFilesSelected={handleFileSelection('key')} 
-            />
-          </div>
-          
-          <FileUpload 
-            label="Student Answer Sheet(s)" 
-            required 
-            files={studentFiles} 
-            onFilesSelected={handleFileSelection('student')} 
-          />
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium flex items-start gap-3 animate-pulse">
-               <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-               <span>{error}</span>
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {viewMode === 'uploader' && (
+          <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
+            <div className="max-w-3xl mx-auto text-center mb-16">
+              <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-[0.2em] mb-4">
+                Smart Answer Evaluation
+              </div>
+              <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight leading-[1.1]">
+                Grade with Confidence. <br/> <span className="text-blue-600">Instantly.</span>
+              </h1>
+              <p className="text-lg text-slate-500 font-medium">
+                Our advanced multimodal AI analyzes handwriting, understands context, and provides fair grading for students.
+              </p>
             </div>
-          )}
 
-          <div className="pt-4">
-            <button
-              onClick={runEvaluation}
-              disabled={isLoading || qpFiles.length === 0 || studentFiles.length === 0}
-              className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
-                isLoading 
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98]'
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Evaluating Documents...
-                </>
-              ) : (
-                <>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                  Generate Evaluation Report
-                </>
+            <div className="bg-white rounded-[40px] p-10 shadow-2xl shadow-slate-200 border border-slate-100 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <FileUpload label="Question Paper" required files={qpFiles} onFilesSelected={handleFileSelection('qp')} />
+                <FileUpload label="Answer Key" files={keyFiles} onFilesSelected={handleFileSelection('key')} />
+              </div>
+              
+              <FileUpload label="Student Answer Sheets" required files={studentFiles} onFilesSelected={handleFileSelection('student')} />
+
+              {error && (
+                <div className="p-5 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold flex items-center gap-4 animate-shake">
+                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                   </div>
+                   <span>{error}</span>
+                </div>
               )}
-            </button>
-            <p className="text-center text-slate-400 text-xs mt-4">
-              Large files or multiple pages may take up to 30 seconds to process.
-            </p>
-          </div>
-        </div>
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="p-4">
-              <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+              <div className="pt-6">
+                <button
+                  onClick={runEvaluation}
+                  disabled={isLoading || qpFiles.length === 0 || studentFiles.length === 0}
+                  className={`group w-full py-5 rounded-2xl font-black text-xl transition-all relative overflow-hidden flex items-center justify-center gap-3 ${
+                    isLoading 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : 'bg-slate-900 text-white hover:bg-blue-600 hover:shadow-2xl hover:shadow-blue-200 active:scale-[0.98]'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      Evaluating Insights...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      Generate Smart Report
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mt-6">
+                  Powered by Gemini Flash Multi-modal Engine
+                </p>
               </div>
-              <h3 className="font-bold text-slate-900 mb-2">Multimodal Support</h3>
-              <p className="text-sm text-slate-500">Easily handles PDF, JPG, and PNG inputs simultaneously.</p>
             </div>
-            <div className="p-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-              </div>
-              <h3 className="font-bold text-slate-900 mb-2">High-Speed OCR</h3>
-              <p className="text-sm text-slate-500">Optimized Flash engine reads messy handwriting at lightning speed.</p>
-            </div>
-            <div className="p-4">
-              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </div>
-              <h3 className="font-bold text-slate-900 mb-2">Verified Accuracy</h3>
-              <p className="text-sm text-slate-500">Grading logic cross-references standard academic curricula.</p>
-            </div>
-        </div>
+          </div>
+        )}
+
+        {viewMode === 'dashboard' && (
+          <Dashboard 
+            history={history} 
+            onViewReport={viewHistoricReport} 
+            onDeleteReport={deleteFromHistory}
+            onNewEvaluation={startNew}
+          />
+        )}
+
+        {viewMode === 'report' && currentReport && (
+          <EvaluationReportView 
+            report={currentReport} 
+            onReset={startNew} 
+          />
+        )}
       </main>
 
-      <footer className="border-t border-slate-100 py-12 mt-20 text-center">
-        <p className="text-slate-400 text-sm">Powered by Gemini 2.5/3.0 &bull; Build 1042</p>
+      <footer className="border-t border-slate-200/50 py-16 mt-20 text-center bg-white no-print">
+        <div className="flex items-center justify-center gap-3 mb-6 grayscale opacity-40">
+           <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold">E</div>
+           <span className="text-xl font-bold text-slate-900 tracking-tight">EduGrade AI</span>
+        </div>
+        <p className="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">Designed for Educators</p>
+        <p className="text-slate-300 text-[10px] font-medium">&copy; 2025 AI Academic Services • All Rights Reserved</p>
       </footer>
     </div>
   );

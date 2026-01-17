@@ -29,4 +29,12 @@ export interface EvaluationReport {
 export interface UploadedFile {
   file: File;
   preview: string;
+  progress: number;
+  status: 'uploading' | 'complete' | 'error';
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  report: EvaluationReport;
 }

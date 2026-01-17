@@ -9,6 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .print-only { display: block !important; }
+            #root { width: 100% !important; }
+            .shadow-sm, .shadow-xl { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+            canvas { max-width: 100% !important; height: auto !important; }
+            .animate-in { animation: none !important; transform: none !important; opacity: 1 !important; }
+        }
     </style>
 <script type="importmap">
 {
