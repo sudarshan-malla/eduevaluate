@@ -25,10 +25,9 @@ const parseDataUrl = (dataUrl: string) => {
  */
 const getApiKey = (): string | undefined => {
   try {
-    // In many modern deployment environments, process.env.API_KEY is simulated or injected
+    // Priority: process.env (Netlify/Local)
     return process.env.API_KEY;
   } catch (e) {
-    // In pure browser environments without a build-time injector, process might be undefined
     return undefined;
   }
 };
@@ -40,13 +39,12 @@ export const evaluateAnswerSheet = async (
 ): Promise<EvaluationReport> => {
   const apiKey = getApiKey();
   
-  // If still missing, we throw a specific error code that the UI can catch to show the Setup screen
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
   
   const ai = new GoogleGenAI({ apiKey });
-  // Using gemini-3-pro-preview for best-in-class handwriting analysis and academic reasoning
+  // Using gemini-3-pro-preview for advanced handwriting analysis and complex grading logic
   const modelName = "gemini-3-pro-preview";
 
   const parts: any[] = [
@@ -54,17 +52,14 @@ export const evaluateAnswerSheet = async (
       text: `You are a high-level academic examiner powered by advanced multimodal AI. 
 Your objective is to perform precise handwriting recognition (OCR) and grade student answer sheets with extreme accuracy.
 
-EVALUATION PROTOCOL:
-1. IDENTIFY: Extract metadata from the student's sheet (Name, ID, Subject, Class).
-2. OCR: Convert handwritten text into digital text. Be highly sensitive to varying handwriting styles.
-3. ANALYSIS: Compare the student's answer to the Question Paper and the Answer Key (if provided). If no Key exists, use current academic standards for the subject.
-4. SCORING: Award marks based on correctness and clarity.
-5. FEEDBACK: For every answer, explain why marks were awarded or deducted.
+STRICT EVALUATION STEPS:
+1. METADATA: Extract Student Name, Roll No, Subject, and Exam details.
+2. OCR: Carefully transcribe every handwritten word. Use context clues to resolve ambiguous handwriting.
+3. COMPARISON: Compare each answer against the provided Question Paper and Answer Key. If no key is provided, use standard academic knowledge for the level.
+4. MARKING: Award marks based on accuracy, relevance, and completeness.
+5. FEEDBACK: Provide specific, constructive feedback for every single question.
 
-OUTPUT REQUIREMENTS:
-- You must return a single, valid JSON object following the response schema exactly.
-- If an answer is completely unreadable, transcribe it as "[Unreadable Handwriting]" and score it as 0.
-- Provide a master summary for the "generalFeedback" field.`
+OUTPUT: Return a valid JSON object matching the requested schema.`
     }
   ];
 
@@ -87,6 +82,8 @@ OUTPUT REQUIREMENTS:
       model: modelName,
       contents: { parts },
       config: {
+        // High thinking budget for maximum accuracy in grading complex handwritten answers
+        thinkingConfig: { thinkingBudget: 16384 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -129,7 +126,7 @@ OUTPUT REQUIREMENTS:
     });
 
     const result = response.text;
-    if (!result) throw new Error("Empty response from AI engine.");
+    if (!result) throw new Error("AI engine failed to generate a response.");
     
     return JSON.parse(result);
   } catch (error: any) {
