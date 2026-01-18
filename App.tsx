@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import FileUpload from './components/FileUpload';
 import EvaluationReportView from './components/EvaluationReportView';
@@ -9,7 +8,7 @@ import { evaluateAnswerSheet } from './services/geminiService';
 const MAX_FILE_SIZE_MB = 3;
 const STORAGE_KEY = 'edugrade_history_v3';
 
-type ViewMode = 'uploader' | 'dashboard' | 'report';
+type ViewMode = 'uploader' | 'dashboard' | 'report' | 'setup';
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('uploader');
@@ -22,7 +21,42 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  // Safety: Initialize history correctly to prevent render errors
+  // Safety check for API Key on mount
+  useEffect(() => {
+    const checkKey = async () => {
+      let isKeySet = false;
+      try {
+        if (typeof process !== 'undefined' && process.env.API_KEY) {
+          isKeySet = true;
+        } else if ((window as any).aistudio && await (window as any).aistudio.hasSelectedApiKey()) {
+          isKeySet = true;
+        }
+      } catch (e) {
+        console.warn("Key check encountered an issue", e);
+      }
+      
+      if (!isKeySet) {
+        setViewMode('setup');
+      }
+    };
+    
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    try {
+      if ((window as any).aistudio) {
+        await (window as any).aistudio.openSelectKey();
+        setViewMode('uploader');
+        setError(null);
+      } else {
+        setError("Key selector is unavailable. Please set the API_KEY environment variable manually.");
+      }
+    } catch (e) {
+      console.error("Failed to open key selector", e);
+    }
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -120,19 +154,25 @@ const App: React.FC = () => {
       setCurrentReport(result);
       setViewMode('report');
     } catch (err: any) {
-      setError(err.message || "Failed to process evaluation.");
+      if (err.message === 'API_KEY_MISSING') {
+        setError("API configuration not found. Please select a project key.");
+        setViewMode('setup');
+      } else if (err.message.includes("Requested entity was not found")) {
+        setError("Project session expired or invalid. Please re-select your key.");
+        setViewMode('setup');
+      } else {
+        setError(err.message || "Failed to process evaluation.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fix: Implemented viewHistoricReport to handle viewing archived reports
   const viewHistoricReport = (item: HistoryItem) => {
     setCurrentReport(item.report);
     setViewMode('report');
   };
 
-  // Fix: Implemented deleteFromHistory to remove reports from the history vault
   const deleteFromHistory = (id: string) => {
     setHistory(prev => prev.filter(item => item.id !== id));
   };
@@ -175,6 +215,32 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-16">
+        {viewMode === 'setup' && (
+          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="w-24 h-24 bg-[#FCA311]/10 rounded-[32px] flex items-center justify-center mb-10 border border-[#FCA311]/20 shadow-2xl">
+                <svg className="w-12 h-12 text-[#FCA311]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+             </div>
+             <h2 className="text-4xl font-black text-white mb-4 tracking-tighter">AUTHENTICATION REQUIRED</h2>
+             <p className="text-white/50 text-center max-w-md mb-12 leading-relaxed">
+               To activate the Gemini Pro multimodal engine on this platform, you must authorize this application session with a project key.
+             </p>
+             <button 
+               onClick={handleOpenKeySelector}
+               className="bg-[#FCA311] text-black px-12 py-5 rounded-2xl font-black text-sm tracking-[0.2em] shadow-[0_0_30px_rgba(252,163,17,0.3)] hover:bg-white hover:scale-105 active:scale-95 transition-all uppercase"
+             >
+               Authorize Session Key
+             </button>
+             <p className="mt-10 text-[9px] text-white/20 font-black tracking-[0.4em] uppercase">
+               Secured Academic Pipeline
+             </p>
+             {error && (
+               <div className="mt-12 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold animate-shake text-center max-w-sm">
+                 {error}
+               </div>
+             )}
+          </div>
+        )}
+
         {viewMode === 'uploader' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center mb-16">

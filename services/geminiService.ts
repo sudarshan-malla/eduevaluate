@@ -20,17 +20,33 @@ const parseDataUrl = (dataUrl: string) => {
   }
 };
 
+/**
+ * Safely retrieves the API Key from the environment
+ */
+const getApiKey = (): string | undefined => {
+  try {
+    // In many modern deployment environments, process.env.API_KEY is simulated or injected
+    return process.env.API_KEY;
+  } catch (e) {
+    // In pure browser environments without a build-time injector, process might be undefined
+    return undefined;
+  }
+};
+
 export const evaluateAnswerSheet = async (
   qpImages: string[],
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing. Please ensure the API_KEY environment variable is configured in your project settings.");
+  const apiKey = getApiKey();
+  
+  // If still missing, we throw a specific error code that the UI can catch to show the Setup screen
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING");
   }
   
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  // Using gemini-3-pro-preview for complex reasoning and high-fidelity multimodal analysis
+  const ai = new GoogleGenAI({ apiKey });
+  // Using gemini-3-pro-preview for best-in-class handwriting analysis and academic reasoning
   const modelName = "gemini-3-pro-preview";
 
   const parts: any[] = [
@@ -118,6 +134,6 @@ OUTPUT REQUIREMENTS:
     return JSON.parse(result);
   } catch (error: any) {
     console.error("Evaluation failure:", error);
-    throw new Error(error.message || "An error occurred during AI evaluation. Please check your image clarity.");
+    throw new Error(error.message || "An error occurred during AI evaluation.");
   }
 };
