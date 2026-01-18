@@ -43,7 +43,7 @@ award marks accurately, and return JSON only.`,
   addFiles(keyImages, "Answer Key");
   addFiles(studentImages, "Student Answer Sheet");
 
-  const res = await fetch("/.netlify/functions/evaluate", {
+  const res = await fetch("https://eduevaluate-backend-production.up.railway.app/evaluate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
