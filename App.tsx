@@ -7,7 +7,7 @@ import { UploadedFile, EvaluationReport, HistoryItem } from './types';
 import { evaluateAnswerSheet } from './services/geminiService';
 
 const MAX_FILE_SIZE_MB = 3;
-const STORAGE_KEY = 'edugrade_history';
+const STORAGE_KEY = 'edugrade_history_v3';
 
 type ViewMode = 'uploader' | 'dashboard' | 'report';
 
@@ -22,21 +22,25 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  // Load history from localStorage
+  // Safety: Initialize history correctly to prevent render errors
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setHistory(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse history", e);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setHistory(parsed);
       }
+    } catch (e) {
+      console.warn("Could not load history from storage", e);
     }
   }, []);
 
-  // Save history to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.warn("Could not save history to storage", e);
+    }
   }, [history]);
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -50,7 +54,6 @@ const App: React.FC = () => {
 
   const simulateProgress = async (fileId: string, type: 'qp' | 'key' | 'student') => {
     const updateProgress = (p: number) => {
-      // Fix: Added explicit return type and cast status property to satisfy the union type defined in UploadedFile
       const updater = (prev: UploadedFile[]): UploadedFile[] => 
         prev.map(f => f.file.name === fileId ? { 
           ...f, 
@@ -63,9 +66,9 @@ const App: React.FC = () => {
       else setStudentFiles(updater);
     };
 
-    for (let p = 0; p <= 100; p += 10) {
+    for (let p = 0; p <= 100; p += 20) {
       updateProgress(p);
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 80));
     }
   };
 
@@ -73,32 +76,27 @@ const App: React.FC = () => {
     setError(null);
     const validFiles = files.filter(f => {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setError(`File "${f.name}" exceeds ${MAX_FILE_SIZE_MB}MB.`);
+        setError(`"${f.name}" is too large (Max ${MAX_FILE_SIZE_MB}MB).`);
         return false;
       }
       return true;
     });
 
-    const newUploaded = await Promise.all(validFiles.map(async (file) => {
+    const newFiles = await Promise.all(validFiles.map(async (file) => {
       const preview = await fileToBase64(file);
-      return {
-        file,
-        preview,
-        progress: 0,
-        status: 'uploading' as const
-      };
+      return { file, preview, progress: 0, status: 'uploading' as const };
     }));
 
-    if (type === 'qp') setQpFiles(prev => [...prev, ...newUploaded]);
-    if (type === 'key') setKeyFiles(prev => [...prev, ...newUploaded]);
-    if (type === 'student') setStudentFiles(prev => [...prev, ...newUploaded]);
+    if (type === 'qp') setQpFiles(prev => [...prev, ...newFiles]);
+    if (type === 'key') setKeyFiles(prev => [...prev, ...newFiles]);
+    if (type === 'student') setStudentFiles(prev => [...prev, ...newFiles]);
 
-    newUploaded.forEach(f => simulateProgress(f.file.name, type));
+    newFiles.forEach(f => simulateProgress(f.file.name, type));
   };
 
   const runEvaluation = async () => {
     if (qpFiles.length === 0 || studentFiles.length === 0) {
-      setError("Please upload Question Paper and Student Answer Sheet.");
+      setError("Please upload Question Paper and Student Answer Sheets.");
       return;
     }
 
@@ -122,21 +120,21 @@ const App: React.FC = () => {
       setCurrentReport(result);
       setViewMode('report');
     } catch (err: any) {
-      setError(err.message || "Processing failed. Check file clarity.");
+      setError(err.message || "Failed to process evaluation.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const deleteFromHistory = (id: string) => {
-    if (confirm("Delete this report permanently?")) {
-      setHistory(prev => prev.filter(h => h.id !== id));
-    }
-  };
-
+  // Fix: Implemented viewHistoricReport to handle viewing archived reports
   const viewHistoricReport = (item: HistoryItem) => {
     setCurrentReport(item.report);
     setViewMode('report');
+  };
+
+  // Fix: Implemented deleteFromHistory to remove reports from the history vault
+  const deleteFromHistory = (id: string) => {
+    setHistory(prev => prev.filter(item => item.id !== id));
   };
 
   const startNew = () => {
@@ -149,59 +147,60 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-100 selection:text-blue-900">
-      <nav className="border-b border-slate-200/60 px-8 py-5 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-40">
-        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setViewMode('uploader')}>
-          <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 transform group-hover:rotate-6 transition-transform">E</div>
+    <div className="min-h-screen bg-[#14213D] text-white selection:bg-[#FCA311]/40">
+      {/* Premium Navbar */}
+      <nav className="border-b border-white/5 px-8 py-5 flex justify-between items-center sticky top-0 bg-[#000000]/80 backdrop-blur-xl z-50 no-print">
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setViewMode('uploader')}>
+          <div className="w-10 h-10 bg-[#FCA311] rounded flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(252,163,17,0.4)] transition-transform group-hover:rotate-3">E</div>
           <div>
-            <span className="text-lg font-black text-slate-900 tracking-tight block leading-none">EduGrade AI</span>
-            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">Examiner v3.0</span>
+            <span className="text-lg font-black tracking-tight block leading-none">EduGrade AI</span>
+            <span className="text-[10px] text-[#FCA311] font-bold uppercase tracking-[0.2em]">Academic Analytics</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl no-print">
+        <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
           <button 
             onClick={() => setViewMode('uploader')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'uploader' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-widest ${viewMode === 'uploader' ? 'bg-[#FCA311] text-black shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
           >
-            New
+            NEW
           </button>
           <button 
             onClick={() => setViewMode('dashboard')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${viewMode === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-widest ${viewMode === 'dashboard' ? 'bg-[#FCA311] text-black shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
           >
-            Dashboard
+            HISTORY
           </button>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-12">
+      <main className="max-w-5xl mx-auto px-6 py-16">
         {viewMode === 'uploader' && (
-          <div className="animate-in fade-in slide-in-from-bottom-6 duration-500">
-            <div className="max-w-3xl mx-auto text-center mb-16">
-              <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[11px] font-black uppercase tracking-[0.2em] mb-4">
-                Smart Answer Evaluation
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="text-center mb-16">
+              <div className="inline-block px-4 py-1.5 bg-[#FCA311]/10 text-[#FCA311] rounded-full text-[9px] font-black uppercase tracking-[0.4em] mb-6 border border-[#FCA311]/20">
+                Next-Gen Grading Engine
               </div>
-              <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight leading-[1.1]">
-                Grade with Confidence. <br/> <span className="text-blue-600">Instantly.</span>
+              <h1 className="text-6xl font-black text-white mb-6 tracking-tighter leading-none">
+                Elite Academic <br/> <span className="text-[#FCA311]">Evaluation.</span>
               </h1>
-              <p className="text-lg text-slate-500 font-medium">
-                Our advanced multimodal AI analyzes handwriting, understands context, and provides fair grading for students.
+              <p className="text-white/50 font-medium max-w-lg mx-auto leading-relaxed">
+                Analyze handwriting and assess knowledge with industrial precision using our pro-tier multimodal analysis engine.
               </p>
             </div>
 
-            <div className="bg-white rounded-[40px] p-10 shadow-2xl shadow-slate-200 border border-slate-100 space-y-10">
+            <div className="bg-black/20 backdrop-blur-md rounded-[32px] p-10 border border-white/5 space-y-12">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <FileUpload label="Question Paper" required files={qpFiles} onFilesSelected={handleFileSelection('qp')} />
-                <FileUpload label="Answer Key" files={keyFiles} onFilesSelected={handleFileSelection('key')} />
+                <FileUpload label="Answer Key (Optional)" files={keyFiles} onFilesSelected={handleFileSelection('key')} />
               </div>
               
-              <FileUpload label="Student Answer Sheets" required files={studentFiles} onFilesSelected={handleFileSelection('student')} />
+              <FileUpload label="Student Answer Sheet(s)" required files={studentFiles} onFilesSelected={handleFileSelection('student')} />
 
               {error && (
-                <div className="p-5 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold flex items-center gap-4 animate-shake">
-                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-4 animate-shake">
+                   <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                    </div>
                    <span>{error}</span>
                 </div>
@@ -211,27 +210,24 @@ const App: React.FC = () => {
                 <button
                   onClick={runEvaluation}
                   disabled={isLoading || qpFiles.length === 0 || studentFiles.length === 0}
-                  className={`group w-full py-5 rounded-2xl font-black text-xl transition-all relative overflow-hidden flex items-center justify-center gap-3 ${
+                  className={`group w-full py-6 rounded-2xl font-black text-xl tracking-tighter transition-all relative overflow-hidden flex items-center justify-center gap-4 ${
                     isLoading 
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : 'bg-slate-900 text-white hover:bg-blue-600 hover:shadow-2xl hover:shadow-blue-200 active:scale-[0.98]'
+                    ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' 
+                    : 'bg-[#FCA311] text-black hover:bg-white hover:shadow-[0_0_30px_rgba(252,163,17,0.3)] active:scale-[0.98]'
                   }`}
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                      Evaluating Insights...
+                      <div className="w-5 h-5 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+                      PROCESSING ARCHIVES...
                     </>
                   ) : (
                     <>
-                      <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      Generate Smart Report
+                      <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      GENERATE TRANSCRIPT
                     </>
                   )}
                 </button>
-                <p className="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mt-6">
-                  Powered by Gemini Flash Multi-modal Engine
-                </p>
               </div>
             </div>
           </div>
@@ -247,20 +243,17 @@ const App: React.FC = () => {
         )}
 
         {viewMode === 'report' && currentReport && (
-          <EvaluationReportView 
-            report={currentReport} 
-            onReset={startNew} 
-          />
+          <EvaluationReportView report={currentReport} onReset={startNew} />
         )}
       </main>
 
-      <footer className="border-t border-slate-200/50 py-16 mt-20 text-center bg-white no-print">
-        <div className="flex items-center justify-center gap-3 mb-6 grayscale opacity-40">
-           <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold">E</div>
-           <span className="text-xl font-bold text-slate-900 tracking-tight">EduGrade AI</span>
+      <footer className="border-t border-white/5 py-20 mt-20 text-center no-print opacity-50">
+        <div className="flex items-center justify-center gap-2 mb-6 grayscale brightness-200">
+           <div className="w-8 h-8 bg-white/20 rounded flex items-center justify-center text-white font-black">E</div>
+           <span className="text-xl font-black tracking-tight">EduGrade AI</span>
         </div>
-        <p className="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">Designed for Educators</p>
-        <p className="text-slate-300 text-[10px] font-medium">&copy; 2025 AI Academic Services • All Rights Reserved</p>
+        <p className="text-[#FCA311] text-[10px] font-black uppercase tracking-[0.5em] mb-4">The Gold Standard of Evaluation</p>
+        <p className="text-white/20 text-[9px] font-medium tracking-widest uppercase">&copy; 2025 Premium Academic Services • Global AI Network</p>
       </footer>
     </div>
   );

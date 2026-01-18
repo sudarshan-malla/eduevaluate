@@ -1,9 +1,5 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EvaluationReport } from "../types";
-
-// Initialize with the API key from environment
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Extracts the MIME type and base64 data from a Data URL
@@ -11,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const parseDataUrl = (dataUrl: string) => {
   try {
     const parts = dataUrl.split(',');
-    if (parts.length !== 2) throw new Error("Invalid Data URL format");
+    if (parts.length !== 2) return null;
     
     const header = parts[0];
     const data = parts[1];
@@ -29,35 +25,41 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  // Use gemini-3-flash-preview for faster processing and high reliability in OCR/JSON tasks
-  const model = "gemini-3-flash-preview";
+  // Creating a new instance per request ensures we always use the latest environment variables
+  if (!process.env.API_KEY) {
+    throw new Error("API Key is missing. Please set the API_KEY environment variable.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Using gemini-3-pro-preview for best results in complex grading and multimodal tasks
+  const model = "gemini-3-pro-preview";
 
   const parts: any[] = [
     {
-      text: `You are a professional academic examiner.
-Your task is to evaluate a student's answer sheet based on a provided question paper and (optional) answer key.
+      text: `You are a professional academic examiner with expertise in analyzing student handwriting.
+Your task is to evaluate a student's answer sheet against a question paper and an optional answer key.
 
-TASKS:
-1. Identify the student's details (Name, Roll Number, etc.) from the first page of the answer sheet.
-2. For every question found in the Question Paper:
-   - Locate the corresponding answer in the Student's sheet.
-   - Grade it against the Answer Key (if provided) or your own expert knowledge of the subject.
-   - Provide constructive feedback for each answer.
-3. Calculate the total score and percentage.
-4. Provide a general summary of the student's performance.
+STEPS:
+1. Extract student metadata (Name, Roll, Class, Subject, Date) from the first sheet.
+2. For every question in the Question Paper:
+   - OCR the student's handwritten response.
+   - Compare with the Answer Key (if provided) or standard subject knowledge.
+   - Grade accurately and provide specific, helpful feedback for that question.
+3. Sum the marks for a total score and calculate percentage.
+4. Provide a master performance summary.
 
-CRITICAL:
-- Read handwritten text carefully.
-- Return ONLY a valid JSON object following the schema provided. No conversational text.`
+FORMATTING:
+- Return ONLY valid JSON.
+- Be precise with OCR; don't guess if unreadable, state 'unreadable' and score accordingly.`
     }
   ];
 
-  // Helper to add files to the parts array with safety checks
   const addFilesToParts = (urls: string[], label: string) => {
     urls.forEach((url, idx) => {
       const parsed = parseDataUrl(url);
       if (parsed && parsed.data) {
-        parts.push({ text: `${label} - Page ${idx + 1}:` });
+        parts.push({ text: `${label} - Part ${idx + 1}:` });
         parts.push({ 
           inlineData: { 
             mimeType: parsed.mimeType, 
@@ -73,7 +75,7 @@ CRITICAL:
   addFilesToParts(studentImages, "Student Answer Sheet");
 
   if (parts.length === 1) {
-    throw new Error("No valid document data found to send to AI.");
+    throw new Error("Missing document data. Please upload files correctly.");
   }
 
   try {
@@ -122,17 +124,12 @@ CRITICAL:
       }
     });
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("Empty response from AI. The files might be too complex or contain unreadable content.");
-    }
+    const resultText = response.text;
+    if (!resultText) throw new Error("Evaluation engine failed to produce a response.");
 
-    return JSON.parse(text.trim()) as EvaluationReport;
+    return JSON.parse(resultText.trim()) as EvaluationReport;
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    if (error.message?.includes("400") || error.message?.includes("INVALID_ARGUMENT")) {
-      throw new Error("The AI could not process one of your images. Please ensure they are clear, not rotated, and in a standard format (JPG/PNG/PDF).");
-    }
-    throw error;
+    console.error("AI Evaluation Error:", error);
+    throw new Error(error.message || "An unexpected error occurred during evaluation.");
   }
 };
