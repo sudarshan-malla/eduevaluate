@@ -1,7 +1,7 @@
 import { EvaluationReport } from "../types";
 
 /**
- * Parse base64 image
+ * Extract base64 image + MIME from Data URL
  */
 const parseDataUrl = (dataUrl: string) => {
   const parts = dataUrl.split(",");
@@ -24,13 +24,14 @@ export const evaluateAnswerSheet = async (
   const parts: any[] = [
     {
       text: `You are an elite academic examiner.
-Perform OCR, evaluate answers, assign marks, and return strict JSON.`,
+Perform OCR on handwritten answers, evaluate strictly,
+award marks accurately, and return JSON only.`,
     },
   ];
 
-  const addFiles = (files: string[], label: string) => {
-    files.forEach((file, i) => {
-      const parsed = parseDataUrl(file);
+  const addFiles = (images: string[], label: string) => {
+    images.forEach((img, i) => {
+      const parsed = parseDataUrl(img);
       if (parsed) {
         parts.push({ text: `${label} Page ${i + 1}` });
         parts.push(parsed);
@@ -44,19 +45,15 @@ Perform OCR, evaluate answers, assign marks, and return strict JSON.`,
 
   const res = await fetch("/.netlify/functions/evaluate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      parts,
-      config: {
-        responseMimeType: "application/json",
-      },
-    }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ parts }), // ✅ FIXED
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    console.error("Server error:", errText);
-    throw new Error("Evaluation failed");
+    const err = await res.text();
+    throw new Error(err);
   }
 
   return JSON.parse(await res.text());
