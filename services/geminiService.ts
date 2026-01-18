@@ -29,7 +29,7 @@ export const evaluateAnswerSheet = async (
     throw new Error("ENV_KEY_MISSING");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: "AIzaSyD4yIGMS7HKjBVU9W286ooq_nFI4DBoCZw" });
   const modelName = "gemini-3-pro-preview";
 
   // Fix: Explicitly type parts to allow both text and multimodal inlineData parts.
