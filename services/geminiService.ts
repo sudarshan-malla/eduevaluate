@@ -27,15 +27,6 @@ export const evaluateAnswerSheet = async (
   });
 
   const modelName = "models/gemini-2.5-flash";
-  const response = await ai.models.generateContent({
-  model: modelName,
-  contents: { parts },
-  config: {
-    thinkingConfig: { thinkingBudget: 4096 },
-    responseMimeType: "application/json",
-    responseSchema: { /* unchanged */ }
-  }
-});
 
   // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
@@ -77,7 +68,7 @@ export const evaluateAnswerSheet = async (
       model: modelName,
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 16384 },
+        thinkingConfig: { thinkingBudget: 4096 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
