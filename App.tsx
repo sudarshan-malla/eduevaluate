@@ -62,7 +62,7 @@ const App: React.FC = () => {
 
     for (let p = 0; p <= 100; p += 25) {
       updateProgress(p);
-      await new Promise(r => setTimeout(r, 60));
+      await new Promise(r => setTimeout(r, 50));
     }
   };
 
@@ -70,7 +70,7 @@ const App: React.FC = () => {
     setError(null);
     const validFiles = files.filter(f => {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setError(`"${f.name}" is too large (>3MB).`);
+        setError(`"${f.name}" exceeds 3MB limit.`);
         return false;
       }
       return true;
@@ -90,7 +90,7 @@ const App: React.FC = () => {
 
   const runEvaluation = async () => {
     if (qpFiles.length === 0 || studentFiles.length === 0) {
-      setError("Please provide a Question Paper and Student Answer Sheets.");
+      setError("Incomplete Dossier: Please upload Question Paper and Student Answer Sheets.");
       return;
     }
 
@@ -115,12 +115,12 @@ const App: React.FC = () => {
       setViewMode('report');
     } catch (err: any) {
       console.error("Evaluation Error:", err);
-      if (err.message === 'ENV_KEY_MISSING') {
-        setError("Deployment Error: API_KEY environment variable is not accessible by the browser. On Netlify, standard env vars are only available during the build. Ensure you are using a build tool that injects process.env variables into your frontend bundle.");
-      } else if (err.message === 'INVALID_API_KEY') {
-        setError("API Key Error: The provided key is invalid. Please check your Google AI Studio console.");
+      if (err.message === 'API_KEY_MISSING') {
+        setError("Deployment Configuration Error: The API_KEY environment variable is not set. If you are on Netlify, please add API_KEY to your site settings and 'Clear cache and deploy' again.");
+      } else if (err.message === 'API_KEY_INVALID') {
+        setError("Unauthorized: The provided API Key is invalid or expired.");
       } else {
-        setError(err.message || "An error occurred. Check your connection and try again.");
+        setError(err.message || "An unexpected error occurred during analysis. Please check your connection.");
       }
     } finally {
       setIsLoading(false);
@@ -168,13 +168,13 @@ const App: React.FC = () => {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center mb-16">
               <div className="inline-block px-4 py-1.5 bg-[#FCA311]/10 text-[#FCA311] rounded-full text-[9px] font-black uppercase tracking-[0.4em] mb-6 border border-[#FCA311]/20">
-                Next-Gen Grading Engine
+                Premium Grading Engine
               </div>
               <h1 className="text-6xl font-black text-white mb-6 tracking-tighter leading-none">
-                Elite Academic <br/> <span className="text-[#FCA311]">Evaluation.</span>
+                Automated <br/> <span className="text-[#FCA311]">Evaluation.</span>
               </h1>
               <p className="text-white/50 font-medium max-w-lg mx-auto leading-relaxed">
-                Using Gemini 3 Pro reasoning to analyze handwriting and assess knowledge with unprecedented accuracy.
+                Utilizing Gemini 3 Pro to analyze handwritten transcripts with pedagogical precision.
               </p>
             </div>
 
@@ -208,12 +208,12 @@ const App: React.FC = () => {
                   {isLoading ? (
                     <>
                       <div className="w-5 h-5 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                      PROCESSING...
+                      DECODING HANDWRITING...
                     </>
                   ) : (
                     <>
                       <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      GENERATE TRANSCRIPT
+                      GENERATE REPORT
                     </>
                   )}
                 </button>

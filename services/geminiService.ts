@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EvaluationReport } from "../types";
 
@@ -26,21 +25,31 @@ export const evaluateAnswerSheet = async (
   const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    throw new Error("ENV_KEY_MISSING");
+    throw new Error("API_KEY_MISSING");
   }
 
-  const ai = new GoogleGenAI({ apiKey: "AIzaSyD4yIGMS7HKjBVU9W286ooq_nFI4DBoCZw" });
+  // Create a new instance right before use to ensure the latest key is used.
+  const ai = new GoogleGenAI({ apiKey });
   const modelName = "gemini-3-pro-preview";
 
-  // Fix: Explicitly type parts to allow both text and multimodal inlineData parts.
-  // This prevents TypeScript from narrowing the array type to only { text: string }.
+  // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
     {
-      text: `You are an expert academic evaluator. Analyze the Question Paper, optional Answer Key, and Student Answer Sheets.
-      1. Perform accurate OCR on the handwritten answers. 
-      2. Evaluate each question fairly based on the provided material. Award partial marks where appropriate.
-      3. Be critical but fair. Provide specific feedback on why marks were deducted.
-      4. Output a detailed evaluation report in JSON format.`
+      text: `You are an elite academic examiner with expertise in handwriting analysis and pedagogical assessment.
+      
+      INPUT DATA:
+      - Question Paper: The source questions.
+      - Answer Key (Optional): The expected correct answers for reference.
+      - Student Answer Sheets: Handwritten responses to be evaluated.
+      
+      TASKS:
+      1. Perform high-precision OCR on handwritten text.
+      2. Compare student answers against the question paper requirements and answer key.
+      3. Award marks based on accuracy, logic, and completeness.
+      4. Provide constructive feedback for each answer.
+      5. Generate a comprehensive summary.
+      
+      Return the evaluation in structured JSON.`
     }
   ];
 
@@ -48,7 +57,7 @@ export const evaluateAnswerSheet = async (
     urls.forEach((url, i) => {
       const part = parseDataUrl(url);
       if (part) {
-        parts.push({ text: `REFERENCE ${label} (Part ${i + 1}):` });
+        parts.push({ text: `REFERENCE: ${label} (Part ${i + 1})` });
         parts.push(part);
       }
     });
@@ -56,7 +65,7 @@ export const evaluateAnswerSheet = async (
 
   addFiles(qpImages, "Question Paper");
   addFiles(keyImages, "Answer Key");
-  addFiles(studentImages, "Student Answer Sheets");
+  addFiles(studentImages, "Student Answer Sheet");
 
   try {
     const response = await ai.models.generateContent({
@@ -93,29 +102,26 @@ export const evaluateAnswerSheet = async (
                   feedback: { type: Type.STRING },
                 },
                 required: ["questionNumber", "marksObtained", "totalMarks"]
-              },
-              propertyOrdering: ["questionNumber", "studentAnswer", "correctAnswer", "marksObtained", "totalMarks", "feedback"]
+              }
             },
             totalScore: { type: Type.NUMBER },
             maxScore: { type: Type.NUMBER },
             percentage: { type: Type.NUMBER },
             generalFeedback: { type: Type.STRING },
           },
-          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"],
-          propertyOrdering: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
+          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
         }
       }
     });
 
     if (!response.text) {
-      throw new Error("Evaluation failed: No response text received from model.");
+      throw new Error("The model did not return a valid evaluation transcript.");
     }
 
     return JSON.parse(response.text.trim());
-  } catch (err: any) {
-    if (err.message?.includes("API_KEY_INVALID")) {
-      throw new Error("INVALID_API_KEY");
-    }
-    throw err;
+  } catch (error: any) {
+    console.error("SDK Evaluation Error:", error);
+    if (error.message?.includes("API_KEY_INVALID")) throw new Error("API_KEY_INVALID");
+    throw error;
   }
 };
