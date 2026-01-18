@@ -54,6 +54,8 @@ Perform OCR, evaluate answers, assign marks, and return strict JSON.`,
   });
 
   if (!res.ok) {
+    const errText = await res.text();
+    console.error("Server error:", errText);
     throw new Error("Evaluation failed");
   }
 
