@@ -42,7 +42,7 @@ Perform OCR, evaluate answers, assign marks, and return strict JSON.`,
   addFiles(keyImages, "Answer Key");
   addFiles(studentImages, "Student Answer Sheet");
 
-  const res = await fetch("/.netlify/functions", {
+  const res = await fetch("/.netlify/functions/evaluate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
