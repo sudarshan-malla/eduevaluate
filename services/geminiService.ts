@@ -26,7 +26,16 @@ export const evaluateAnswerSheet = async (
     apiKey: "AIzaSyD4yIGMS7HKjBVU9W286ooq_nFI4DBoCZw"
   });
 
-  const modelName = "gemini-3-pro-preview";
+  const modelName = "models/gemini-2.5-flash";
+  const response = await ai.models.generateContent({
+  model: modelName,
+  contents: { parts },
+  config: {
+    thinkingConfig: { thinkingBudget: 4096 },
+    responseMimeType: "application/json",
+    responseSchema: { /* unchanged */ }
+  }
+});
 
   // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
