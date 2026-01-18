@@ -21,9 +21,6 @@ export const evaluateAnswerSheet = async (
   studentImages: string[]
 ): Promise<EvaluationReport> => {
 
-  // ----------------------------
-  // Build Gemini parts (UNCHANGED)
-  // ----------------------------
   const parts: any[] = [
     {
       text: `You are an elite academic examiner.
@@ -46,58 +43,18 @@ award marks accurately, and return JSON only.`,
   addFiles(keyImages, "Answer Key");
   addFiles(studentImages, "Student Answer Sheet");
 
-  // ----------------------------
-  // API CALL
-  // ----------------------------
-  const res = await fetch(
-    "https://eduevaluate-backend-production.up.railway.app/evaluate",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ parts }),
-    }
-  );
+  const res = await fetch("https://eduevaluate-backend-production.up.railway.app/evaluate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ parts }), // ✅ FIXED
+  });
 
   if (!res.ok) {
     const err = await res.text();
     throw new Error(err);
   }
 
-  const data = await res.json();
-  console.log("RAW BACKEND RESPONSE:", data);
-
-  // ----------------------------
-  // 🔴 FIX 1: SAFE GEMINI EXTRACTION
-  // ----------------------------
-  const geminiParts =
-    data?.candidates?.[0]?.content?.parts;
-
-  if (!Array.isArray(geminiParts)) {
-    console.error("Invalid Gemini response structure:", data);
-    throw new Error("Evaluation failed: Invalid Gemini response.");
-  }
-
-  const textOutput = geminiParts
-    .map((p: any) => p?.text ?? "")
-    .join("")
-    .trim();
-
-  if (!textOutput) {
-    throw new Error("Evaluation failed: Empty Gemini response.");
-  }
-
-  // ----------------------------
-  // 🔴 FIX 2: SAFE JSON PARSE
-  // ----------------------------
-  let report: EvaluationReport;
-  try {
-    report = JSON.parse(textOutput);
-  } catch (err) {
-    console.error("Gemini returned non-JSON:", textOutput);
-    throw new Error("Evaluation failed: Gemini did not return valid JSON.");
-  }
-
-  return report;
+  return JSON.parse(await res.text());
 };
