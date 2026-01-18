@@ -1,107 +1,19 @@
-// import { EvaluationReport } from "../types";
-
-// /**
-//  * Extract base64 image + MIME from Data URL
-//  */
-// const parseDataUrl = (dataUrl: string) => {
-//   const parts = dataUrl.split(",");
-//   if (parts.length !== 2) return null;
-
-//   return {
-//     inlineData: {
-//       data: parts[1],
-//       mimeType: dataUrl.match(/:(.*?);/)?.[1] || "image/jpeg",
-//     },
-//   };
-// };
-
-// export const evaluateAnswerSheet = async (
-//   qpImages: string[],
-//   keyImages: string[],
-//   studentImages: string[]
-// ): Promise<EvaluationReport> => {
-
-//   const parts: any[] = [
-//     {
-//       text: `You are an elite academic examiner.
-// Perform OCR on handwritten answers, evaluate strictly,
-// award marks accurately, and return JSON only.`,
-//     },
-//   ];
-
-//   const addFiles = (images: string[], label: string) => {
-//     images.forEach((img, i) => {
-//       const parsed = parseDataUrl(img);
-//       if (parsed) {
-//         parts.push({ text: `${label} Page ${i + 1}` });
-//         parts.push(parsed);
-//       }
-//     });
-//   };
-
-//   addFiles(qpImages, "Question Paper");
-//   addFiles(keyImages, "Answer Key");
-//   addFiles(studentImages, "Student Answer Sheet");
-
-//   const res = await fetch("https://eduevaluate-backend-production.up.railway.app/evaluate", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify({ parts }), // ✅ FIXED
-//   });
-
-//   if (!res.ok) {
-//     const err = await res.text();
-//     throw new Error(err);
-//   }
-
-//   return JSON.parse(await res.text());
-// };
-
+import { GoogleGenAI, Type } from "@google/genai";
 import { EvaluationReport } from "../types";
 
 /**
- * Resize & compress image to avoid large payload crashes
- */
-const resizeImage = (
-  dataUrl: string,
-  maxWidth = 1200,
-  quality = 0.7
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement("canvas");
-
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject("Canvas not supported");
-
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", quality)); // JPEG + compression
-    };
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
-};
-
-/**
- * Extract base64 image + MIME from Data URL
+ * Extracts the MIME type and base64 data from a Data URL
  */
 const parseDataUrl = (dataUrl: string) => {
-  const parts = dataUrl.split(",");
-  if (parts.length !== 2) return null;
-
-  return {
-    inlineData: {
-      data: parts[1],
-      mimeType: "image/jpeg",
-    },
-  };
+  try {
+    const parts = dataUrl.split(',');
+    if (parts.length !== 2) return null;
+    const data = parts[1];
+    const mimeType = parts[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    return { inlineData: { data, mimeType } };
+  } catch (err) {
+    return null;
+  }
 };
 
 export const evaluateAnswerSheet = async (
@@ -109,106 +21,107 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
+  // Access the API key exclusively from process.env.API_KEY as per instructions.
+  const apiKey = process.env.API_KEY;
 
-  // ----------------------------
-  // Build Gemini parts
-  // ----------------------------
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("API_KEY_MISSING");
+  }
+
+  // Create a new instance right before use to ensure the latest key is used.
+  const ai = new GoogleGenAI({ apiKey });
+  const modelName = "gemini-3-pro-preview";
+
+  // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
     {
-      text: `You are an elite academic examiner.
-Perform OCR on handwritten answers, evaluate strictly,
-award marks accurately, and return JSON only.`,
-    },
+      text: `You are an elite academic examiner with expertise in handwriting analysis and pedagogical assessment.
+      
+      INPUT DATA:
+      - Question Paper: The source questions.
+      - Answer Key (Optional): The expected correct answers for reference.
+      - Student Answer Sheets: Handwritten responses to be evaluated.
+      
+      TASKS:
+      1. Perform high-precision OCR on handwritten text.
+      2. Compare student answers against the question paper requirements and answer key.
+      3. Award marks based on accuracy, logic, and completeness.
+      4. Provide constructive feedback for each answer.
+      5. Generate a comprehensive summary.
+      
+      Return the evaluation in structured JSON.`
+    }
   ];
 
-  const addFiles = async (images: string[], label: string) => {
-    for (let i = 0; i < images.length; i++) {
-      const resized = await resizeImage(images[i]);
-      const parsed = parseDataUrl(resized);
-
-      if (parsed) {
-        parts.push({ text: `${label} Page ${i + 1}` });
-        parts.push(parsed);
+  const addFiles = (urls: string[], label: string) => {
+    urls.forEach((url, i) => {
+      const part = parseDataUrl(url);
+      if (part) {
+        parts.push({ text: `REFERENCE: ${label} (Part ${i + 1})` });
+        parts.push(part);
       }
-    }
+    });
   };
 
-  // 🔴 CRITICAL: await these to avoid race conditions
-  await addFiles(qpImages, "Question Paper");
-  await addFiles(keyImages, "Answer Key");
-  await addFiles(studentImages, "Student Answer Sheet");
+  addFiles(qpImages, "Question Paper");
+  addFiles(keyImages, "Answer Key");
+  addFiles(studentImages, "Student Answer Sheet");
 
-  // ----------------------------
-  // Network request (SAFE)
-  // ----------------------------
-  let res: Response;
   try {
-    res = await fetch(
-      "https://eduevaluate-backend-production.up.railway.app/evaluate",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ parts }),
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: { parts },
+      config: {
+        thinkingConfig: { thinkingBudget: 16384 },
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            studentInfo: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                rollNumber: { type: Type.STRING },
+                subject: { type: Type.STRING },
+                class: { type: Type.STRING },
+                examName: { type: Type.STRING },
+                date: { type: Type.STRING },
+              },
+              required: ["name", "subject"]
+            },
+            grades: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  questionNumber: { type: Type.STRING },
+                  studentAnswer: { type: Type.STRING },
+                  correctAnswer: { type: Type.STRING },
+                  marksObtained: { type: Type.NUMBER },
+                  totalMarks: { type: Type.NUMBER },
+                  feedback: { type: Type.STRING },
+                },
+                required: ["questionNumber", "marksObtained", "totalMarks"]
+              }
+            },
+            totalScore: { type: Type.NUMBER },
+            maxScore: { type: Type.NUMBER },
+            percentage: { type: Type.NUMBER },
+            generalFeedback: { type: Type.STRING },
+          },
+          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
+        }
       }
-    );
-  } catch (err) {
-    console.error("Network failure:", err);
-    throw new Error("Network error while generating report");
+    });
+
+    if (!response.text) {
+      throw new Error("The model did not return a valid evaluation transcript.");
+    }
+
+    return JSON.parse(response.text.trim());
+  } catch (error: any) {
+    console.error("SDK Evaluation Error:", error);
+    if (error.message?.includes("API_KEY_INVALID")) throw new Error("API_KEY_INVALID");
+    throw error;
   }
-
-  // ----------------------------
-  // Read response ONCE
-  // ----------------------------
-  const rawText = await res.text();
-
-  if (!res.ok) {
-    console.error("Backend error:", rawText);
-    throw new Error("Evaluation failed on server");
-  }
-
-  // ----------------------------
-  // SAFE JSON parse
-  // ----------------------------
-  let parsedResponse: any;
-  try {
-    parsedResponse = JSON.parse(rawText);
-  } catch {
-    console.error("Non-JSON response:", rawText);
-    throw new Error("Evaluator returned invalid format");
-  }
-
-  // ----------------------------
-  // SAFE Gemini extraction
-  // ----------------------------
-  const geminiParts =
-    parsedResponse?.candidates?.[0]?.content?.parts;
-
-  if (!Array.isArray(geminiParts)) {
-    console.error("Unexpected Gemini structure:", parsedResponse);
-    throw new Error("Invalid Gemini response structure");
-  }
-
-  const textOutput = geminiParts
-    .map((p: any) => p?.text ?? "")
-    .join("")
-    .trim();
-
-  if (!textOutput) {
-    throw new Error("Empty evaluation response");
-  }
-
-  // ----------------------------
-  // FINAL JSON parse (report)
-  // ----------------------------
-  let report: EvaluationReport;
-  try {
-    report = JSON.parse(textOutput);
-  } catch {
-    console.error("Gemini output not valid JSON:", textOutput);
-    throw new Error("Evaluation result is not valid JSON");
-  }
-
-  return report;
 };

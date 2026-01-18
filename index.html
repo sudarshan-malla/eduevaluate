@@ -9,8 +9,8 @@
     <style>
         body { 
           font-family: 'Inter', sans-serif; 
-          background-color: #14213D;
-          color: #FFFFFF;
+          background-color: #f8fafc;
+          color: #0f172a;
           margin: 0;
           overflow-x: hidden;
         }
@@ -24,28 +24,28 @@
             body { background: white !important; padding: 0 !important; color: black !important; }
             #root { width: 100% !important; margin: 0 !important; padding: 0 !important; }
             .print-container { width: 100% !important; max-width: 100% !important; }
-            .shadow-sm, .shadow-xl, .shadow-2xl { box-shadow: none !important; border: 1px solid #000000 !important; }
+            .shadow-sm, .shadow-xl, .shadow-2xl { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
             canvas { max-width: 100% !important; height: auto !important; }
             .animate-in { animation: none !important; transform: none !important; opacity: 1 !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000000; }
-        ::-webkit-scrollbar-thumb { background: #FCA311; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #E5E5E5; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         .glass {
-          background: rgba(0, 0, 0, 0.4);
+          background: rgba(255, 255, 255, 0.8);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
         }
         .animate-shake { animation: shake 0.3s ease-in-out; }
     </style>
@@ -63,7 +63,7 @@
 }
 </script>
 </head>
-<body class="bg-[#14213D]">
+<body class="bg-slate-50">
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
 </body>

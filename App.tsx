@@ -6,7 +6,7 @@ import { UploadedFile, EvaluationReport, HistoryItem } from './types';
 import { evaluateAnswerSheet } from './services/geminiService';
 
 const MAX_FILE_SIZE_MB = 3;
-const STORAGE_KEY = 'edugrade_history_v3';
+const STORAGE_KEY = 'edugrade_history_v4';
 
 type ViewMode = 'uploader' | 'dashboard' | 'report';
 
@@ -20,6 +20,17 @@ const App: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<EvaluationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [hasApiKey, setHasApiKey] = useState(!!process.env.API_KEY);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        if (selected) setHasApiKey(true);
+      }
+    };
+    checkKey();
+  }, []);
 
   useEffect(() => {
     try {
@@ -36,6 +47,14 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     } catch (e) {}
   }, [history]);
+
+  const handleOpenKeySelector = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      setHasApiKey(true);
+      setError(null);
+    }
+  };
 
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -62,7 +81,7 @@ const App: React.FC = () => {
 
     for (let p = 0; p <= 100; p += 25) {
       updateProgress(p);
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 40));
     }
   };
 
@@ -90,7 +109,7 @@ const App: React.FC = () => {
 
   const runEvaluation = async () => {
     if (qpFiles.length === 0 || studentFiles.length === 0) {
-      setError("Incomplete Dossier: Please upload Question Paper and Student Answer Sheets.");
+      setError("Please upload Question Paper and Student Answer Sheets.");
       return;
     }
 
@@ -116,11 +135,11 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Evaluation Error:", err);
       if (err.message === 'API_KEY_MISSING') {
-        setError("Deployment Configuration Error: The API_KEY environment variable is not set. If you are on Netlify, please add API_KEY to your site settings and 'Clear cache and deploy' again.");
+        setError("API Key Error: Environment variable not found. Use the 'Connect API Key' button below.");
       } else if (err.message === 'API_KEY_INVALID') {
-        setError("Unauthorized: The provided API Key is invalid or expired.");
+        setError("Invalid Key: The provided API key is incorrect or expired.");
       } else {
-        setError(err.message || "An unexpected error occurred during analysis. Please check your connection.");
+        setError(err.message || "An unexpected error occurred during processing.");
       }
     } finally {
       setIsLoading(false);
@@ -137,49 +156,57 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#14213D] text-white selection:bg-[#FCA311]/40">
-      <nav className="border-b border-white/5 px-8 py-5 flex justify-between items-center sticky top-0 bg-[#000000]/80 backdrop-blur-xl z-50 no-print">
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={startNew}>
-          <div className="w-10 h-10 bg-[#FCA311] rounded flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(252,163,17,0.4)] transition-transform group-hover:rotate-3">E</div>
-          <div>
-            <span className="text-lg font-black tracking-tight block leading-none">EduGrade AI</span>
-            <span className="text-[10px] text-[#FCA311] font-bold uppercase tracking-[0.2em]">Academic Analytics</span>
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100">
+      <nav className="border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-50 no-print">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={startNew}>
+          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">E</div>
+          <div className="leading-tight">
+            <span className="text-base font-bold text-slate-900 block">EduGrade AI</span>
+            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Academic Engine</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-          <button 
-            onClick={() => setViewMode('uploader')}
-            className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-widest ${viewMode === 'uploader' || viewMode === 'report' ? 'bg-[#FCA311] text-black shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-          >
-            NEW
-          </button>
-          <button 
-            onClick={() => setViewMode('dashboard')}
-            className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-widest ${viewMode === 'dashboard' ? 'bg-[#FCA311] text-black shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-          >
-            HISTORY
-          </button>
+        <div className="flex items-center gap-4">
+          {!hasApiKey && (
+            <button 
+              onClick={handleOpenKeySelector}
+              className="px-4 py-2 text-[10px] font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+              CONNECT API KEY
+            </button>
+          )}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+            <button 
+              onClick={() => setViewMode('uploader')}
+              className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'uploader' || viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              NEW
+            </button>
+            <button 
+              onClick={() => setViewMode('dashboard')}
+              className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              HISTORY
+            </button>
+          </div>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 py-12">
         {viewMode === 'uploader' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center mb-16">
-              <div className="inline-block px-4 py-1.5 bg-[#FCA311]/10 text-[#FCA311] rounded-full text-[9px] font-black uppercase tracking-[0.4em] mb-6 border border-[#FCA311]/20">
-                Premium Grading Engine
-              </div>
-              <h1 className="text-6xl font-black text-white mb-6 tracking-tighter leading-none">
-                Automated <br/> <span className="text-[#FCA311]">Evaluation.</span>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
+                Automatic Answer Evaluation
               </h1>
-              <p className="text-white/50 font-medium max-w-lg mx-auto leading-relaxed">
-                Utilizing Gemini 3 Pro to analyze handwritten transcripts with pedagogical precision.
+              <p className="text-slate-500 font-medium max-w-lg mx-auto leading-relaxed">
+                Upload question papers and student sheets to generate instant academic reports using advanced AI.
               </p>
             </div>
 
-            <div className="bg-black/20 backdrop-blur-md rounded-[32px] p-10 border border-white/5 space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="bg-white shadow-sm rounded-2xl p-8 border border-slate-200 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FileUpload label="Question Paper" required files={qpFiles} onFilesSelected={handleFileSelection('qp')} />
                 <FileUpload label="Answer Key (Optional)" files={keyFiles} onFilesSelected={handleFileSelection('key')} />
               </div>
@@ -187,33 +214,36 @@ const App: React.FC = () => {
               <FileUpload label="Student Answer Sheet(s)" required files={studentFiles} onFilesSelected={handleFileSelection('student')} />
 
               {error && (
-                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-4 animate-shake">
-                   <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium flex items-center gap-3 animate-shake">
+                   <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                   <div className="flex flex-col">
+                      <span>{error}</span>
+                      {!hasApiKey && (
+                        <button onClick={handleOpenKeySelector} className="text-[10px] underline mt-1 font-bold">Configure API Key Now</button>
+                      )}
                    </div>
-                   <span className="leading-tight">{error}</span>
                 </div>
               )}
 
-              <div className="pt-6">
+              <div className="pt-4">
                 <button
                   onClick={runEvaluation}
                   disabled={isLoading || qpFiles.length === 0 || studentFiles.length === 0}
-                  className={`group w-full py-6 rounded-2xl font-black text-xl tracking-tighter transition-all relative overflow-hidden flex items-center justify-center gap-4 ${
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
                     isLoading 
-                    ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' 
-                    : 'bg-[#FCA311] text-black hover:bg-white hover:shadow-[0_0_30px_rgba(252,163,17,0.3)] active:scale-[0.98]'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99] shadow-md shadow-blue-200'
                   }`}
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-5 h-5 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                      DECODING HANDWRITING...
+                      <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                      PROCESSING...
                     </>
                   ) : (
                     <>
-                      <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      GENERATE REPORT
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      GENERATE ANALYSIS
                     </>
                   )}
                 </button>
@@ -236,9 +266,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="border-t border-white/5 py-20 mt-20 text-center no-print opacity-50">
-        <p className="text-[#FCA311] text-[10px] font-black uppercase tracking-[0.5em] mb-4">Powered by Gemini 3 Pro • Global Evaluation Network</p>
-        <p className="text-white/20 text-[9px] font-medium tracking-widest uppercase">&copy; 2025 EduGrade AI</p>
+      <footer className="py-12 mt-12 text-center no-print">
+        <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">&copy; 2025 EduGrade AI • Academic Analytics</p>
       </footer>
     </div>
   );
