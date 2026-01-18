@@ -21,15 +21,19 @@ const parseDataUrl = (dataUrl: string) => {
 };
 
 /**
- * Safely retrieves the API Key from the environment
+ * Safely retrieves the API Key from the environment.
+ * In production builds (like Netlify), this is typically injected by the bundler.
  */
 const getApiKey = (): string | undefined => {
   try {
-    // Priority: process.env (Netlify/Local)
-    return process.env.API_KEY;
+    // Standard access for process.env
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
   } catch (e) {
-    return undefined;
+    // Fallback for strict environments
   }
+  return undefined;
 };
 
 export const evaluateAnswerSheet = async (
@@ -44,7 +48,6 @@ export const evaluateAnswerSheet = async (
   }
   
   const ai = new GoogleGenAI({ apiKey });
-  // Using gemini-3-pro-preview for advanced handwriting analysis and complex grading logic
   const modelName = "gemini-3-pro-preview";
 
   const parts: any[] = [
@@ -55,7 +58,7 @@ Your objective is to perform precise handwriting recognition (OCR) and grade stu
 STRICT EVALUATION STEPS:
 1. METADATA: Extract Student Name, Roll No, Subject, and Exam details.
 2. OCR: Carefully transcribe every handwritten word. Use context clues to resolve ambiguous handwriting.
-3. COMPARISON: Compare each answer against the provided Question Paper and Answer Key. If no key is provided, use standard academic knowledge for the level.
+3. COMPARISON: Compare each answer against the provided Question Paper and Answer Key.
 4. MARKING: Award marks based on accuracy, relevance, and completeness.
 5. FEEDBACK: Provide specific, constructive feedback for every single question.
 
@@ -82,7 +85,6 @@ OUTPUT: Return a valid JSON object matching the requested schema.`
       model: modelName,
       contents: { parts },
       config: {
-        // High thinking budget for maximum accuracy in grading complex handwritten answers
         thinkingConfig: { thinkingBudget: 16384 },
         responseMimeType: "application/json",
         responseSchema: {

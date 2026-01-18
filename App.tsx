@@ -119,22 +119,13 @@ const App: React.FC = () => {
       setViewMode('report');
     } catch (err: any) {
       if (err.message === 'API_KEY_MISSING') {
-        setError("API Key Error: Please ensure you have added 'API_KEY' to your Netlify Environment Variables and redeployed.");
+        setError("API Key Error: Variable not found at runtime. Go to Netlify Dashboard > Deploys > Trigger Deploy > 'Clear cache and deploy site' to force a fresh build with your API_KEY.");
       } else {
         setError(err.message || "An unexpected error occurred during evaluation.");
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const viewHistoricReport = (item: HistoryItem) => {
-    setCurrentReport(item.report);
-    setViewMode('report');
-  };
-
-  const deleteFromHistory = (id: string) => {
-    setHistory(prev => prev.filter(item => item.id !== id));
   };
 
   const startNew = () => {
@@ -201,7 +192,7 @@ const App: React.FC = () => {
                    <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                    </div>
-                   <span>{error}</span>
+                   <span className="leading-tight">{error}</span>
                 </div>
               )}
 
@@ -235,8 +226,8 @@ const App: React.FC = () => {
         {viewMode === 'dashboard' && (
           <Dashboard 
             history={history} 
-            onViewReport={viewHistoricReport} 
-            onDeleteReport={deleteFromHistory}
+            onViewReport={(item) => { setCurrentReport(item.report); setViewMode('report'); }} 
+            onDeleteReport={(id) => setHistory(prev => prev.filter(item => item.id !== id))}
             onNewEvaluation={startNew}
           />
         )}
