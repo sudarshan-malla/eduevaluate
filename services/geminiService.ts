@@ -30,26 +30,27 @@ export const evaluateAnswerSheet = async (
 
   // Create a new instance right before use to ensure the latest key is used.
   const ai = new GoogleGenAI({ apiKey });
-  const modelName = "models/gemini-2.5-flash";
+  
+  // Changed to gemini-2.5-flash to handle quota limits better (less restrictive than Pro)
+  const modelName = "gemini-2.5-flash";
 
   // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
     {
-      text: `You are an elite academic examiner with expertise in handwriting analysis and pedagogical assessment.
+      text: `You are an expert academic evaluator. Your task is to perform handwritten answer sheet evaluation.
       
       INPUT DATA:
-      - Question Paper: The source questions.
-      - Answer Key (Optional): The expected correct answers for reference.
-      - Student Answer Sheets: Handwritten responses to be evaluated.
+      - Question Paper: Use this to understand the questions and mark distribution.
+      - Answer Key (Optional): Use this as a reference for correct content.
+      - Student Answer Sheets: These are handwritten. Perform OCR to read them.
       
-      TASKS:
-      1. Perform high-precision OCR on handwritten text.
-      2. Compare student answers against the question paper requirements and answer key.
-      3. Award marks based on accuracy, logic, and completeness.
-      4. Provide constructive feedback for each answer.
-      5. Generate a comprehensive summary.
+      EVALUATION RULES:
+      1. Be accurate and fair in marking.
+      2. Award marks based on the provided Question Paper's mark scheme.
+      3. If no answer key is provided, use your internal knowledge to judge accuracy.
+      4. Provide helpful feedback for each question.
       
-      Return the evaluation in structured JSON.`
+      Return the final report strictly in JSON format.`
     }
   ];
 
@@ -57,7 +58,7 @@ export const evaluateAnswerSheet = async (
     urls.forEach((url, i) => {
       const part = parseDataUrl(url);
       if (part) {
-        parts.push({ text: `REFERENCE: ${label} (Part ${i + 1})` });
+        parts.push({ text: `DATA: ${label} (Page ${i + 1})` });
         parts.push(part);
       }
     });
@@ -72,7 +73,7 @@ export const evaluateAnswerSheet = async (
       model: modelName,
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 4096 },
+        thinkingConfig: { thinkingBudget: 16384 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -115,12 +116,12 @@ export const evaluateAnswerSheet = async (
     });
 
     if (!response.text) {
-      throw new Error("The model did not return a valid evaluation transcript.");
+      throw new Error("No response text received from the AI model.");
     }
 
     return JSON.parse(response.text.trim());
   } catch (error: any) {
-    console.error("SDK Evaluation Error:", error);
+    console.error("Gemini Evaluation Error:", error);
     if (error.message?.includes("API_KEY_INVALID")) throw new Error("API_KEY_INVALID");
     throw error;
   }

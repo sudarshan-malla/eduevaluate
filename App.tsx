@@ -51,6 +51,7 @@ const App: React.FC = () => {
   const handleOpenKeySelector = async () => {
     if (window.aistudio?.openSelectKey) {
       await window.aistudio.openSelectKey();
+      // Assume success as per instructions
       setHasApiKey(true);
       setError(null);
     }
@@ -135,11 +136,13 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Evaluation Error:", err);
       if (err.message === 'API_KEY_MISSING') {
-        setError("API Key Error: Environment variable not found. Use the 'Connect API Key' button below.");
+        setError("API Key Error: Variable not found. Use the 'Setup API Key' button in the navigation bar.");
       } else if (err.message === 'API_KEY_INVALID') {
-        setError("Invalid Key: The provided API key is incorrect or expired.");
+        setError("Invalid Key: Please check your API key project and billing.");
+      } else if (err.status === 429 || err.message?.includes('429')) {
+        setError("AI Quota Exceeded: Too many requests. Please wait a minute and try again.");
       } else {
-        setError(err.message || "An unexpected error occurred during processing.");
+        setError(err.message || "An error occurred during evaluation.");
       }
     } finally {
       setIsLoading(false);
@@ -159,10 +162,10 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100">
       <nav className="border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-50 no-print">
         <div className="flex items-center gap-3 cursor-pointer" onClick={startNew}>
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">E</div>
+          <div className="w-9 h-9 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">E</div>
           <div className="leading-tight">
             <span className="text-base font-bold text-slate-900 block">EduGrade AI</span>
-            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Academic Engine</span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Evaluation System</span>
           </div>
         </div>
         
@@ -170,10 +173,10 @@ const App: React.FC = () => {
           {!hasApiKey && (
             <button 
               onClick={handleOpenKeySelector}
-              className="px-4 py-2 text-[10px] font-bold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all flex items-center gap-2"
+              className="px-4 py-2 text-[10px] font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-              CONNECT API KEY
+              SETUP API KEY
             </button>
           )}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
@@ -181,13 +184,13 @@ const App: React.FC = () => {
               onClick={() => setViewMode('uploader')}
               className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'uploader' || viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              NEW
+              EVALUATE
             </button>
             <button 
               onClick={() => setViewMode('dashboard')}
               className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              HISTORY
+              RECORDS
             </button>
           </div>
         </div>
@@ -198,10 +201,10 @@ const App: React.FC = () => {
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
-                Automatic Answer Evaluation
+                Automatic Answer Sheet Evaluation
               </h1>
               <p className="text-slate-500 font-medium max-w-lg mx-auto leading-relaxed">
-                Upload question papers and student sheets to generate instant academic reports using advanced AI.
+                Scan your question paper and student answers to get an automated grading report.
               </p>
             </div>
 
@@ -219,7 +222,7 @@ const App: React.FC = () => {
                    <div className="flex flex-col">
                       <span>{error}</span>
                       {!hasApiKey && (
-                        <button onClick={handleOpenKeySelector} className="text-[10px] underline mt-1 font-bold">Configure API Key Now</button>
+                        <button onClick={handleOpenKeySelector} className="text-[10px] underline mt-1 font-bold">Configure API Key</button>
                       )}
                    </div>
                 </div>
@@ -238,12 +241,12 @@ const App: React.FC = () => {
                   {isLoading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
-                      PROCESSING...
+                      GRADING IN PROGRESS...
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      GENERATE ANALYSIS
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      START EVALUATION
                     </>
                   )}
                 </button>
@@ -266,8 +269,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-12 mt-12 text-center no-print">
-        <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">&copy; 2025 EduGrade AI • Academic Analytics</p>
+      <footer className="py-12 mt-12 text-center no-print border-t border-slate-100">
+        <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">&copy; 2025 EduGrade AI</p>
       </footer>
     </div>
   );
