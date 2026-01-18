@@ -22,14 +22,10 @@ export const evaluateAnswerSheet = async (
   studentImages: string[]
 ): Promise<EvaluationReport> => {
   // Access the API key exclusively from process.env.API_KEY as per instructions.
-  const apiKey = process.env.API_KEY;
+  const ai = new GoogleGenAI({
+    apiKey: "AIzaSyD4yIGMS7HKjBVU9W286ooq_nFI4DBoCZw"
+  });
 
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    throw new Error("API_KEY_MISSING");
-  }
-
-  // Create a new instance right before use to ensure the latest key is used.
-  const ai = new GoogleGenAI({ apiKey });
   const modelName = "gemini-3-pro-preview";
 
   // Use any[] to allow mixed types in the parts array
