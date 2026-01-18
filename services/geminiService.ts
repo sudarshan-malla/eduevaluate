@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { EvaluationReport } from "../types";
 
@@ -8,12 +9,9 @@ const parseDataUrl = (dataUrl: string) => {
   try {
     const parts = dataUrl.split(',');
     if (parts.length !== 2) return null;
-    
-    const header = parts[0];
     const data = parts[1];
-    const mimeType = header.match(/:(.*?);/)?.[1] || "image/jpeg";
-    
-    return { mimeType, data };
+    const mimeType = parts[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    return { inlineData: { data, mimeType } };
   } catch (err) {
     return null;
   }
@@ -24,33 +22,41 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  // Directly using process.env.API_KEY as mandated by security and SDK guidelines.
-  // This ensures the key is never leaked in the source code.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Access the API key exclusively from process.env.API_KEY as per instructions.
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("ENV_KEY_MISSING");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const modelName = "gemini-3-pro-preview";
 
+  // Fix: Explicitly type parts to allow both text and multimodal inlineData parts.
+  // This prevents TypeScript from narrowing the array type to only { text: string }.
   const parts: any[] = [
     {
-      text: `You are a high-level academic examiner. 
-      Analyze the provided question paper and student answer sheet. 
-      Perform high-precision handwriting OCR and evaluate the answers for accuracy.
-      Return a detailed JSON report following the requested schema.`
+      text: `You are an expert academic evaluator. Analyze the Question Paper, optional Answer Key, and Student Answer Sheets.
+      1. Perform accurate OCR on the handwritten answers. 
+      2. Evaluate each question fairly based on the provided material. Award partial marks where appropriate.
+      3. Be critical but fair. Provide specific feedback on why marks were deducted.
+      4. Output a detailed evaluation report in JSON format.`
     }
   ];
 
-  const addFilesToContext = (urls: string[], label: string) => {
+  const addFiles = (urls: string[], label: string) => {
     urls.forEach((url, i) => {
-      const parsed = parseDataUrl(url);
-      if (parsed) {
-        parts.push({ text: `REFERENCE: ${label} (Part ${i + 1})` });
-        parts.push({ inlineData: { data: parsed.data, mimeType: parsed.mimeType } });
+      const part = parseDataUrl(url);
+      if (part) {
+        parts.push({ text: `REFERENCE ${label} (Part ${i + 1}):` });
+        parts.push(part);
       }
     });
   };
 
-  addFilesToContext(qpImages, "Question Paper");
-  addFilesToContext(keyImages, "Answer Key");
-  addFilesToContext(studentImages, "Student Answer Sheet");
+  addFiles(qpImages, "Question Paper");
+  addFiles(keyImages, "Answer Key");
+  addFiles(studentImages, "Student Answer Sheets");
 
   try {
     const response = await ai.models.generateContent({
@@ -87,25 +93,29 @@ export const evaluateAnswerSheet = async (
                   feedback: { type: Type.STRING },
                 },
                 required: ["questionNumber", "marksObtained", "totalMarks"]
-              }
+              },
+              propertyOrdering: ["questionNumber", "studentAnswer", "correctAnswer", "marksObtained", "totalMarks", "feedback"]
             },
             totalScore: { type: Type.NUMBER },
             maxScore: { type: Type.NUMBER },
             percentage: { type: Type.NUMBER },
             generalFeedback: { type: Type.STRING },
           },
-          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
+          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"],
+          propertyOrdering: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
         }
       }
     });
 
     if (!response.text) {
-      throw new Error("Evaluation failed: No text content returned from AI.");
+      throw new Error("Evaluation failed: No response text received from model.");
     }
 
     return JSON.parse(response.text.trim());
-  } catch (error: any) {
-    console.error("SDK Evaluation Error:", error);
-    throw error;
+  } catch (err: any) {
+    if (err.message?.includes("API_KEY_INVALID")) {
+      throw new Error("INVALID_API_KEY");
+    }
+    throw err;
   }
 };

@@ -28,17 +28,13 @@ const App: React.FC = () => {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) setHistory(parsed);
       }
-    } catch (e) {
-      console.warn("Could not load history", e);
-    }
+    } catch (e) {}
   }, []);
 
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-    } catch (e) {
-      console.warn("Could not save history", e);
-    }
+    } catch (e) {}
   }, [history]);
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -56,7 +52,7 @@ const App: React.FC = () => {
         prev.map(f => f.file.name === fileId ? { 
           ...f, 
           progress: p, 
-          status: (p === 100 ? 'complete' : 'uploading') as 'uploading' | 'complete' | 'error' 
+          status: (p === 100 ? 'complete' : 'uploading') as any 
         } : f);
       
       if (type === 'qp') setQpFiles(updater);
@@ -74,7 +70,7 @@ const App: React.FC = () => {
     setError(null);
     const validFiles = files.filter(f => {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setError(`"${f.name}" is too large (Max ${MAX_FILE_SIZE_MB}MB).`);
+        setError(`"${f.name}" is too large (>3MB).`);
         return false;
       }
       return true;
@@ -94,7 +90,7 @@ const App: React.FC = () => {
 
   const runEvaluation = async () => {
     if (qpFiles.length === 0 || studentFiles.length === 0) {
-      setError("Please upload Question Paper and Student Answer Sheets.");
+      setError("Please provide a Question Paper and Student Answer Sheets.");
       return;
     }
 
@@ -119,11 +115,12 @@ const App: React.FC = () => {
       setViewMode('report');
     } catch (err: any) {
       console.error("Evaluation Error:", err);
-      // Catch common API key issues thrown by the SDK
-      if (err.message?.toLowerCase().includes('apikey') || err.message?.toLowerCase().includes('invalid')) {
-        setError("API Key Error: The browser cannot access your API_KEY. Verify it is set in Netlify Environment Variables AND that you have performed a 'Clear cache and deploy' to inject it into the production build.");
+      if (err.message === 'ENV_KEY_MISSING') {
+        setError("Deployment Error: API_KEY environment variable is not accessible by the browser. On Netlify, standard env vars are only available during the build. Ensure you are using a build tool that injects process.env variables into your frontend bundle.");
+      } else if (err.message === 'INVALID_API_KEY') {
+        setError("API Key Error: The provided key is invalid. Please check your Google AI Studio console.");
       } else {
-        setError(err.message || "An unexpected error occurred during evaluation. Please try again.");
+        setError(err.message || "An error occurred. Check your connection and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -211,7 +208,7 @@ const App: React.FC = () => {
                   {isLoading ? (
                     <>
                       <div className="w-5 h-5 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-                      DECODING HANDWRITING...
+                      PROCESSING...
                     </>
                   ) : (
                     <>
