@@ -25,62 +25,50 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  // Creating a new instance per request ensures we always use the latest environment variables
   if (!process.env.API_KEY) {
-    throw new Error("API Key is missing. Please set the API_KEY environment variable.");
+    throw new Error("API Key is missing. Please ensure the API_KEY environment variable is configured in your project settings.");
   }
   
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
-  // Using gemini-3-pro-preview for best results in complex grading and multimodal tasks
-  const model = "gemini-3-pro-preview";
+  // Using gemini-3-pro-preview for complex reasoning and high-fidelity multimodal analysis
+  const modelName = "gemini-3-pro-preview";
 
   const parts: any[] = [
     {
-      text: `You are a professional academic examiner with expertise in analyzing student handwriting.
-Your task is to evaluate a student's answer sheet against a question paper and an optional answer key.
+      text: `You are a high-level academic examiner powered by advanced multimodal AI. 
+Your objective is to perform precise handwriting recognition (OCR) and grade student answer sheets with extreme accuracy.
 
-STEPS:
-1. Extract student metadata (Name, Roll, Class, Subject, Date) from the first sheet.
-2. For every question in the Question Paper:
-   - OCR the student's handwritten response.
-   - Compare with the Answer Key (if provided) or standard subject knowledge.
-   - Grade accurately and provide specific, helpful feedback for that question.
-3. Sum the marks for a total score and calculate percentage.
-4. Provide a master performance summary.
+EVALUATION PROTOCOL:
+1. IDENTIFY: Extract metadata from the student's sheet (Name, ID, Subject, Class).
+2. OCR: Convert handwritten text into digital text. Be highly sensitive to varying handwriting styles.
+3. ANALYSIS: Compare the student's answer to the Question Paper and the Answer Key (if provided). If no Key exists, use current academic standards for the subject.
+4. SCORING: Award marks based on correctness and clarity.
+5. FEEDBACK: For every answer, explain why marks were awarded or deducted.
 
-FORMATTING:
-- Return ONLY valid JSON.
-- Be precise with OCR; don't guess if unreadable, state 'unreadable' and score accordingly.`
+OUTPUT REQUIREMENTS:
+- You must return a single, valid JSON object following the response schema exactly.
+- If an answer is completely unreadable, transcribe it as "[Unreadable Handwriting]" and score it as 0.
+- Provide a master summary for the "generalFeedback" field.`
     }
   ];
 
-  const addFilesToParts = (urls: string[], label: string) => {
-    urls.forEach((url, idx) => {
+  const addFilesToContext = (urls: string[], label: string) => {
+    urls.forEach((url, i) => {
       const parsed = parseDataUrl(url);
-      if (parsed && parsed.data) {
-        parts.push({ text: `${label} - Part ${idx + 1}:` });
-        parts.push({ 
-          inlineData: { 
-            mimeType: parsed.mimeType, 
-            data: parsed.data 
-          } 
-        });
+      if (parsed) {
+        parts.push({ text: `REFERENCE: ${label} (Document ${i + 1})` });
+        parts.push({ inlineData: { data: parsed.data, mimeType: parsed.mimeType } });
       }
     });
   };
 
-  addFilesToParts(qpImages, "Question Paper");
-  addFilesToParts(keyImages, "Answer Key");
-  addFilesToParts(studentImages, "Student Answer Sheet");
-
-  if (parts.length === 1) {
-    throw new Error("Missing document data. Please upload files correctly.");
-  }
+  addFilesToContext(qpImages, "Question Paper");
+  addFilesToContext(keyImages, "Answer Key");
+  addFilesToContext(studentImages, "Student Answer Sheet");
 
   try {
     const response = await ai.models.generateContent({
-      model,
+      model: modelName,
       contents: { parts },
       config: {
         responseMimeType: "application/json",
@@ -119,17 +107,17 @@ FORMATTING:
             percentage: { type: Type.NUMBER },
             generalFeedback: { type: Type.STRING },
           },
-          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage"]
+          required: ["studentInfo", "grades", "totalScore", "maxScore", "percentage", "generalFeedback"]
         }
       }
     });
 
-    const resultText = response.text;
-    if (!resultText) throw new Error("Evaluation engine failed to produce a response.");
-
-    return JSON.parse(resultText.trim()) as EvaluationReport;
+    const result = response.text;
+    if (!result) throw new Error("Empty response from AI engine.");
+    
+    return JSON.parse(result);
   } catch (error: any) {
-    console.error("AI Evaluation Error:", error);
-    throw new Error(error.message || "An unexpected error occurred during evaluation.");
+    console.error("Evaluation failure:", error);
+    throw new Error(error.message || "An error occurred during AI evaluation. Please check your image clarity.");
   }
 };
