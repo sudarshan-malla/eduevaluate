@@ -30,7 +30,7 @@ export const evaluateAnswerSheet = async (
 
   // Create a new instance right before use to ensure the latest key is used.
   const ai = new GoogleGenAI({ apiKey });
-  const modelName = "gemini-3-pro-preview";
+  const modelName = "models/gemini-2.5-flash";
 
   // Use any[] to allow mixed types in the parts array
   const parts: any[] = [
@@ -72,7 +72,7 @@ export const evaluateAnswerSheet = async (
       model: modelName,
       contents: { parts },
       config: {
-        thinkingConfig: { thinkingBudget: 16384 },
+        thinkingConfig: { thinkingBudget: 4096 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
