@@ -15,25 +15,8 @@ const parseDataUrl = (dataUrl: string) => {
     
     return { mimeType, data };
   } catch (err) {
-    console.error("Error parsing data URL:", err);
     return null;
   }
-};
-
-/**
- * Safely retrieves the API Key from the environment.
- * In production builds (like Netlify), this is typically injected by the bundler.
- */
-const getApiKey = (): string | undefined => {
-  try {
-    // Standard access for process.env
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
-    }
-  } catch (e) {
-    // Fallback for strict environments
-  }
-  return undefined;
 };
 
 export const evaluateAnswerSheet = async (
@@ -41,28 +24,17 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  const apiKey = getApiKey();
-  
-  if (!apiKey) {
-    throw new Error("API_KEY_MISSING");
-  }
-  
-  const ai = new GoogleGenAI({ apiKey });
+  // Directly using process.env.API_KEY as mandated by security and SDK guidelines.
+  // This ensures the key is never leaked in the source code.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = "gemini-3-pro-preview";
 
   const parts: any[] = [
     {
-      text: `You are a high-level academic examiner powered by advanced multimodal AI. 
-Your objective is to perform precise handwriting recognition (OCR) and grade student answer sheets with extreme accuracy.
-
-STRICT EVALUATION STEPS:
-1. METADATA: Extract Student Name, Roll No, Subject, and Exam details.
-2. OCR: Carefully transcribe every handwritten word. Use context clues to resolve ambiguous handwriting.
-3. COMPARISON: Compare each answer against the provided Question Paper and Answer Key.
-4. MARKING: Award marks based on accuracy, relevance, and completeness.
-5. FEEDBACK: Provide specific, constructive feedback for every single question.
-
-OUTPUT: Return a valid JSON object matching the requested schema.`
+      text: `You are a high-level academic examiner. 
+      Analyze the provided question paper and student answer sheet. 
+      Perform high-precision handwriting OCR and evaluate the answers for accuracy.
+      Return a detailed JSON report following the requested schema.`
     }
   ];
 
@@ -70,7 +42,7 @@ OUTPUT: Return a valid JSON object matching the requested schema.`
     urls.forEach((url, i) => {
       const parsed = parseDataUrl(url);
       if (parsed) {
-        parts.push({ text: `REFERENCE: ${label} (Document ${i + 1})` });
+        parts.push({ text: `REFERENCE: ${label} (Part ${i + 1})` });
         parts.push({ inlineData: { data: parsed.data, mimeType: parsed.mimeType } });
       }
     });
@@ -127,12 +99,13 @@ OUTPUT: Return a valid JSON object matching the requested schema.`
       }
     });
 
-    const result = response.text;
-    if (!result) throw new Error("AI engine failed to generate a response.");
-    
-    return JSON.parse(result);
+    if (!response.text) {
+      throw new Error("Evaluation failed: No text content returned from AI.");
+    }
+
+    return JSON.parse(response.text.trim());
   } catch (error: any) {
-    console.error("Evaluation failure:", error);
-    throw new Error(error.message || "An error occurred during AI evaluation.");
+    console.error("SDK Evaluation Error:", error);
+    throw error;
   }
 };

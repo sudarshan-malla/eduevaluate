@@ -118,10 +118,12 @@ const App: React.FC = () => {
       setCurrentReport(result);
       setViewMode('report');
     } catch (err: any) {
-      if (err.message === 'API_KEY_MISSING') {
-        setError("API Key Error: Variable not found at runtime. Go to Netlify Dashboard > Deploys > Trigger Deploy > 'Clear cache and deploy site' to force a fresh build with your API_KEY.");
+      console.error("Evaluation Error:", err);
+      // Catch common API key issues thrown by the SDK
+      if (err.message?.toLowerCase().includes('apikey') || err.message?.toLowerCase().includes('invalid')) {
+        setError("API Key Error: The browser cannot access your API_KEY. Verify it is set in Netlify Environment Variables AND that you have performed a 'Clear cache and deploy' to inject it into the production build.");
       } else {
-        setError(err.message || "An unexpected error occurred during evaluation.");
+        setError(err.message || "An unexpected error occurred during evaluation. Please try again.");
       }
     } finally {
       setIsLoading(false);
