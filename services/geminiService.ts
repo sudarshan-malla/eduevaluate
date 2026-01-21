@@ -42,19 +42,15 @@ Your task is to evaluate a student's answer sheet based on a provided question p
 TASKS:
 1. Identify the student's details (Name, Roll Number, etc.) from the first page of the answer sheet.
 2. For every question found in the Question Paper:
-   - Identify the maximum marks allocated to THAT question in the Question Paper.
    - Locate the corresponding answer in the Student's sheet.
    - Grade it against the Answer Key (if provided) or your own expert knowledge of the subject.
    - Provide constructive feedback for each answer.
-3. Calculate the total score and percentage. 
-   CRITICAL: The maxScore MUST be the sum of the marks of all questions present in the Question Paper provided. Do not hallucinate a different total marks if the Question Paper explicitly states the marks for each question.
+3. Calculate the total score and percentage.
 4. Provide a general summary of the student's performance.
 
 CRITICAL:
 - Read handwritten text carefully.
-- Return ONLY a valid JSON object following the schema provided. No conversational text.
-- Accuracy is paramount: Ensure every question in the paper is accounted for in the 'grades' array.
-- If a question is not answered, marksObtained should be 0, but the question must still be listed with its totalMarks from the Question Paper.`
+- Return ONLY a valid JSON object following the schema provided. No conversational text.`
     }
   ];
 
