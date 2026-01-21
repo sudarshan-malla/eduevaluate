@@ -21,19 +21,15 @@ export const evaluateAnswerSheet = async (
   keyImages: string[],
   studentImages: string[]
 ): Promise<EvaluationReport> => {
-  // Access the API key exclusively from process.env.API_KEY as per instructions.
   const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey === "undefined" || apiKey === "") {
     throw new Error("API_KEY_MISSING");
   }
 
-  // Create a new instance right before use to ensure the latest key is used.
   const ai = new GoogleGenAI({ apiKey });
-  
   const modelName = "gemini-2.5-flash";
 
-  // Refined prompt to ensure accurate total marks calculation and effective/fair grading
   const parts: any[] = [
     {
       text: `You are a professional academic examiner.
@@ -51,7 +47,7 @@ TASKS:
    - Be "less strict" (lenient) where the student demonstrates a clear understanding but might have minor grammatical or technical errors.
    - Award partial marks for partially correct answers based on the depth of the answer.
 4. For every question found in the Question Paper:
-   - Locate the corresponding answer in the Student's sheet.
+   - EXHAUSTIVELY search through ALL provided student answer pages for the corresponding answer. Do not miss any questions (like Question 6, sub-parts, etc.). Ensure you check every page of the student's work.
    - Grade it against the Answer Key (if provided) or your own expert knowledge.
    - Provide encouraging and constructive feedback for each answer.
 5. Calculate the totalScore (sum of obtained marks) and the percentage.
@@ -59,7 +55,8 @@ TASKS:
 CRITICAL:
 - Read handwritten text carefully.
 - Return ONLY a valid JSON object following the schema provided. No conversational text.
-- If a question is missing/unanswered, marksObtained is 0, but totalMarks must match the paper.`
+- If a question is missing/unanswered in the student's work, marksObtained is 0, but totalMarks must match the paper's allocation.
+- Ensure 'grades' array contains EVERY question from the paper.`
     }
   ];
 

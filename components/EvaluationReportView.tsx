@@ -1,6 +1,6 @@
 import React from 'react';
 import { EvaluationReport } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
 interface EvaluationReportViewProps {
   report: EvaluationReport;
@@ -8,14 +8,6 @@ interface EvaluationReportViewProps {
 }
 
 const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onReset }) => {
-  const chartData = [
-    { name: 'Obtained', value: report.totalScore },
-    { name: 'Remaining', value: Math.max(0, report.maxScore - report.totalScore) },
-  ];
-
-  // Colors: Rich Black and Light Slate
-  const COLORS = ['#001219', '#f1f5f9'];
-
   const barData = report.grades.map(g => ({
     name: `Q${g.questionNumber}`,
     score: g.marksObtained,
@@ -24,48 +16,112 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
 
   const handleDownload = () => window.print();
 
+  // Custom Radial Gauge component for perfect centering
+  const RadialGauge = ({ score, max, size = 180 }: { score: number, max: number, size?: number }) => {
+    const percentage = Math.min(100, Math.max(0, (score / max) * 100));
+    const radius = 70;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    return (
+      <div className="relative flex items-center justify-center mx-auto" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox="0 0 160 160" className="transform -rotate-90">
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            stroke="#f1f5f9"
+            strokeWidth="14"
+            fill="transparent"
+          />
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            stroke="#001219"
+            strokeWidth="14"
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-4xl font-black text-[#001219] tracking-tighter leading-none print:text-3xl">
+              {score}
+            </span>
+            <div className="w-10 h-[3px] bg-[#001219] my-1.5 rounded-full print:w-8 print:h-[2px]"></div>
+            <span className="text-lg font-black text-slate-400 tracking-tight leading-none print:text-sm">
+              {max}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 print-container">
       <style>{`
         @media print {
+          @page {
+            margin: 1cm;
+            size: A4;
+          }
+          body {
+            background-color: white !important;
+          }
           .print-container {
             width: 100% !important;
             max-width: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
+            background: white !important;
           }
           .print-grid {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
+            gap: 20px !important;
+            margin-bottom: 24px !important;
           }
-          .print-hide {
-            display: none !important;
+          .student-card {
+            padding: 24px !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: none !important;
+            border-radius: 20px !important;
           }
           table {
             width: 100% !important;
             table-layout: fixed !important;
-            font-size: 10px !important;
+            border-collapse: collapse !important;
           }
           th, td {
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
-            white-space: normal !important;
-            padding: 8px 4px !important;
+            font-size: 8.5px !important;
+            padding: 8px 6px !important;
+            line-height: 1.4 !important;
+            word-break: break-word !important;
+            vertical-align: top !important;
+            border-bottom: 1px solid #f1f5f9 !important;
           }
-          .recharts-responsive-container {
-            width: 100% !important;
-            height: 180px !important;
-          }
-          .student-card {
-            padding: 15px !important;
+          th {
+            background-color: #f8fafc !important;
+            color: #64748b !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
           }
           .logs-container {
-            margin-top: 20px !important;
-            border-radius: 0 !important;
+            border-radius: 12px !important;
+            border: 1px solid #e2e8f0 !important;
+            margin-top: 30px !important;
             box-shadow: none !important;
-            border: 1px solid #eee !important;
+            page-break-inside: auto !important;
           }
+          tr {
+            page-break-inside: avoid !important;
+          }
+          .no-print { display: none !important; }
         }
       `}</style>
 
@@ -102,15 +158,14 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10 print-grid">
         <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2 student-card">
           <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 bg-[#00cc99]/10 text-[#006a4e] rounded-xl flex items-center justify-center print:w-8 print:h-8">
-              <svg className="w-6 h-6 print:w-4 print:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            <div className="w-12 h-12 bg-[#00cc99]/10 text-[#006a4e] rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
             <div>
               <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Student Profile</h2>
-              <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 no-print">Verified Academic Data</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-10 print:gap-y-4 print:gap-x-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-10 print:gap-y-8">
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
               <p className="text-base font-black text-[#001219] uppercase leading-none print:text-sm">{report.studentInfo.name || '---'}</p>
@@ -139,32 +194,11 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
         </div>
 
         <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl flex flex-col items-center justify-center text-center student-card">
-          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 print:mb-4">Performance Metric</h2>
-          <div className="relative w-48 h-48 print:w-32 print:h-32">
-             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  innerRadius={window.matchMedia('print').matches ? 45 : 75}
-                  outerRadius={window.matchMedia('print').matches ? 60 : 92}
-                  paddingAngle={8}
-                  dataKey="value"
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-4xl font-black text-[#001219] leading-none tracking-tighter print:text-xl">{report.totalScore}</span>
-              <div className="h-[2px] w-8 bg-[#001219] my-2 print:my-1"></div>
-              <span className="text-base font-black text-slate-400 tracking-tight print:text-xs">{report.maxScore}</span>
-            </div>
-          </div>
-          <div className={`mt-10 px-6 py-2 rounded-full text-[11px] font-black tracking-widest border uppercase print:mt-4 print:px-4 print:text-[9px] ${report.percentage >= 40 ? 'bg-[#00cc99]/10 border-[#00cc99]/20 text-[#006a4e]' : 'bg-red-50 border-red-100 text-red-600'}`}>
+          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Performance Metric</h2>
+          
+          <RadialGauge score={report.totalScore} max={report.maxScore} size={window.matchMedia('print').matches ? 150 : 180} />
+
+          <div className={`mt-10 px-6 py-2 rounded-full text-[11px] font-black tracking-widest border uppercase print:mt-6 print:text-[10px] ${report.percentage >= 40 ? 'bg-[#00cc99]/10 border-[#00cc99]/20 text-[#006a4e]' : 'bg-red-50 border-red-100 text-red-600'}`}>
             {report.percentage >= 40 ? 'MERIT SECURED' : 'REVIEW REQUIRED'}
           </div>
         </div>
@@ -172,8 +206,8 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10 print-grid">
         <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2 student-card">
-          <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em] mb-10 print:mb-4">Grade Distribution</h2>
-          <div className="h-72 print:h-44">
+          <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em] mb-10 print:mb-6">Grade Distribution</h2>
+          <div className="h-72 print:h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 900}} />
@@ -187,8 +221,8 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
 
         <div className="bg-[#001219] p-10 rounded-3xl text-white flex flex-col shadow-2xl relative overflow-hidden group student-card">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#00cc99]/10 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:bg-[#00cc99]/20 transition-all duration-700"></div>
-          <h2 className="text-[11px] font-black text-[#00cc99] uppercase tracking-[0.2em] mb-6 print:mb-2">Pedagogical Feedback</h2>
-          <p className="text-base leading-relaxed italic font-medium text-slate-200 print:text-xs">
+          <h2 className="text-[11px] font-black text-[#00cc99] uppercase tracking-[0.2em] mb-6 print:mb-4">Pedagogical Feedback</h2>
+          <p className="text-base leading-relaxed italic font-medium text-slate-200 print:text-[11px]">
             "{report.generalFeedback}"
           </p>
           <div className="mt-auto pt-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#00cc99] print:pt-4">
@@ -199,32 +233,32 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden mb-16 logs-container">
-        <div className="p-8 border-b border-slate-50 bg-slate-50/40 print:p-4">
+        <div className="p-8 border-b border-slate-50 bg-slate-50/40 print:p-5">
            <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Detailed Analysis Log</h2>
         </div>
-        <div className="overflow-x-auto print:overflow-hidden">
+        <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                <th className="px-10 py-5 print:px-2 print:py-3 w-[10%]">Item</th>
-                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Student Response</th>
-                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Standard Answer</th>
-                <th className="px-10 py-5 print:px-2 print:py-3 w-[15%]">Score</th>
-                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Evaluator Notes</th>
+                <th className="px-10 py-5 w-[10%]">Item</th>
+                <th className="px-10 py-5 w-[25%]">Student Response</th>
+                <th className="px-10 py-5 w-[25%]">Standard Answer</th>
+                <th className="px-10 py-5 w-[15%]">Score</th>
+                <th className="px-10 py-5 w-[25%]">Evaluator Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px] print:text-[10px]">
+            <tbody className="divide-y divide-slate-100 text-[13px] print:text-[9.5px]">
               {report.grades.map((grade, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-10 py-8 print:px-2 print:py-4 font-black text-[#001219]">Q{grade.questionNumber}</td>
-                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-700 font-medium leading-relaxed">{grade.studentAnswer}</td>
-                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-400 italic leading-relaxed">{grade.correctAnswer}</td>
-                  <td className="px-10 py-8 print:px-2 print:py-4">
-                    <div className="font-black text-[#006a4e] bg-[#00cc99]/5 px-3 py-1.5 rounded-lg border border-[#00cc99]/10 inline-block text-[11px] print:text-[9px] tracking-tight">
+                  <td className="px-10 py-8 font-black text-[#001219] align-top">Q{grade.questionNumber}</td>
+                  <td className="px-10 py-8 text-slate-700 font-medium leading-relaxed align-top">{grade.studentAnswer}</td>
+                  <td className="px-10 py-8 text-slate-400 italic leading-relaxed align-top">{grade.correctAnswer}</td>
+                  <td className="px-10 py-8 align-top">
+                    <div className="font-black text-[#006a4e] bg-[#00cc99]/5 px-3 py-1.5 rounded-lg border border-[#00cc99]/10 inline-block text-[11px] print:text-[8px] tracking-tight">
                       {grade.marksObtained} / {grade.totalMarks}
                     </div>
                   </td>
-                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-500 italic font-medium leading-relaxed">{grade.feedback}</td>
+                  <td className="px-10 py-8 text-slate-500 italic font-medium leading-relaxed align-top">{grade.feedback}</td>
                 </tr>
               ))}
             </tbody>
