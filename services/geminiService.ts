@@ -33,7 +33,7 @@ export const evaluateAnswerSheet = async (
   
   const modelName = "gemini-2.5-flash";
 
-  // Refined prompt based on user request to improve accuracy and reduce score hallucinations
+  // Refined prompt to ensure accurate total marks calculation and effective/fair grading
   const parts: any[] = [
     {
       text: `You are a professional academic examiner.
@@ -41,16 +41,25 @@ Your task is to evaluate a student's answer sheet based on a provided question p
 
 TASKS:
 1. Identify the student's details (Name, Roll Number, etc.) from the first page of the answer sheet.
-2. For every question found in the Question Paper:
+2. CRITICAL - TOTAL MARKS CALCULATION:
+   - Carefully scan the entire Question Paper.
+   - List every question and identify its maximum marks.
+   - SUM ALL INDIVIDUAL MARKS to get the final "maxScore". 
+   - DO NOT assume or hallucinate a generic total (like 70 or 100). If the paper sums to 80, the maxScore MUST be 80.
+3. EVALUATION PHILOSOPHY:
+   - Evaluate with effectiveness and fairness.
+   - Be "less strict" (lenient) where the student demonstrates a clear understanding but might have minor grammatical or technical errors.
+   - Award partial marks for partially correct answers based on the depth of the answer.
+4. For every question found in the Question Paper:
    - Locate the corresponding answer in the Student's sheet.
-   - Grade it against the Answer Key (if provided) or your own expert knowledge of the subject.
-   - Provide constructive feedback for each answer.
-3. Calculate the total score and percentage.
-4. Provide a general summary of the student's performance.
+   - Grade it against the Answer Key (if provided) or your own expert knowledge.
+   - Provide encouraging and constructive feedback for each answer.
+5. Calculate the totalScore (sum of obtained marks) and the percentage.
 
 CRITICAL:
 - Read handwritten text carefully.
-- Return ONLY a valid JSON object following the schema provided. No conversational text.`
+- Return ONLY a valid JSON object following the schema provided. No conversational text.
+- If a question is missing/unanswered, marksObtained is 0, but totalMarks must match the paper.`
     }
   ];
 

@@ -26,6 +26,49 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 print-container">
+      <style>{`
+        @media print {
+          .print-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .print-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+          }
+          .print-hide {
+            display: none !important;
+          }
+          table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            font-size: 10px !important;
+          }
+          th, td {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            white-space: normal !important;
+            padding: 8px 4px !important;
+          }
+          .recharts-responsive-container {
+            width: 100% !important;
+            height: 180px !important;
+          }
+          .student-card {
+            padding: 15px !important;
+          }
+          .logs-container {
+            margin-top: 20px !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: 1px solid #eee !important;
+          }
+        }
+      `}</style>
+
       <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-8 no-print">
         <div>
           <button 
@@ -56,54 +99,54 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
-        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10 print-grid">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2 student-card">
           <div className="flex items-center gap-4 mb-10">
-            <div className="w-12 h-12 bg-[#00cc99]/10 text-[#006a4e] rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            <div className="w-12 h-12 bg-[#00cc99]/10 text-[#006a4e] rounded-xl flex items-center justify-center print:w-8 print:h-8">
+              <svg className="w-6 h-6 print:w-4 print:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
             <div>
               <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Student Profile</h2>
-              <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Verified Academic Data</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 no-print">Verified Academic Data</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-10 print:gap-y-4 print:gap-x-4">
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
-              <p className="text-base font-black text-[#001219] uppercase leading-none">{report.studentInfo.name || '---'}</p>
+              <p className="text-base font-black text-[#001219] uppercase leading-none print:text-sm">{report.studentInfo.name || '---'}</p>
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Roll Number</p>
-              <p className="text-base font-black text-[#001219] leading-none">{report.studentInfo.rollNumber || '---'}</p>
+              <p className="text-base font-black text-[#001219] leading-none print:text-sm">{report.studentInfo.rollNumber || '---'}</p>
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject</p>
-              <p className="text-base font-black text-[#006a4e] uppercase leading-none">{report.studentInfo.subject || '---'}</p>
+              <p className="text-base font-black text-[#006a4e] uppercase leading-none print:text-sm">{report.studentInfo.subject || '---'}</p>
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Exam Name</p>
-              <p className="text-sm font-bold text-slate-600 uppercase leading-none">{report.studentInfo.examName || '---'}</p>
+              <p className="text-sm font-bold text-slate-600 uppercase leading-none print:text-xs">{report.studentInfo.examName || '---'}</p>
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class/Grade</p>
-              <p className="text-sm font-bold text-slate-600 leading-none">{report.studentInfo.class || '---'}</p>
+              <p className="text-sm font-bold text-slate-600 leading-none print:text-xs">{report.studentInfo.class || '---'}</p>
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</p>
-              <p className="text-sm font-bold text-slate-600 leading-none">{report.studentInfo.date || '---'}</p>
+              <p className="text-sm font-bold text-slate-600 leading-none print:text-xs">{report.studentInfo.date || '---'}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl flex flex-col items-center justify-center text-center">
-          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Performance Metric</h2>
-          <div className="relative w-48 h-48">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl flex flex-col items-center justify-center text-center student-card">
+          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 print:mb-4">Performance Metric</h2>
+          <div className="relative w-48 h-48 print:w-32 print:h-32">
              <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData}
-                  innerRadius={75}
-                  outerRadius={92}
+                  innerRadius={window.matchMedia('print').matches ? 45 : 75}
+                  outerRadius={window.matchMedia('print').matches ? 60 : 92}
                   paddingAngle={8}
                   dataKey="value"
                   startAngle={90}
@@ -116,21 +159,21 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-4xl font-black text-[#001219] leading-none tracking-tighter">{report.totalScore}</span>
-              <div className="h-[2px] w-8 bg-[#001219] my-2"></div>
-              <span className="text-base font-black text-slate-400 tracking-tight">{report.maxScore}</span>
+              <span className="text-4xl font-black text-[#001219] leading-none tracking-tighter print:text-xl">{report.totalScore}</span>
+              <div className="h-[2px] w-8 bg-[#001219] my-2 print:my-1"></div>
+              <span className="text-base font-black text-slate-400 tracking-tight print:text-xs">{report.maxScore}</span>
             </div>
           </div>
-          <div className={`mt-10 px-6 py-2 rounded-full text-[11px] font-black tracking-widest border uppercase ${report.percentage >= 40 ? 'bg-[#00cc99]/10 border-[#00cc99]/20 text-[#006a4e]' : 'bg-red-50 border-red-100 text-red-600'}`}>
+          <div className={`mt-10 px-6 py-2 rounded-full text-[11px] font-black tracking-widest border uppercase print:mt-4 print:px-4 print:text-[9px] ${report.percentage >= 40 ? 'bg-[#00cc99]/10 border-[#00cc99]/20 text-[#006a4e]' : 'bg-red-50 border-red-100 text-red-600'}`}>
             {report.percentage >= 40 ? 'MERIT SECURED' : 'REVIEW REQUIRED'}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
-        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2">
-          <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em] mb-10">Grade Distribution</h2>
-          <div className="h-72">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10 print-grid">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2 student-card">
+          <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em] mb-10 print:mb-4">Grade Distribution</h2>
+          <div className="h-72 print:h-44">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 900}} />
@@ -142,46 +185,46 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
           </div>
         </div>
 
-        <div className="bg-[#001219] p-10 rounded-3xl text-white flex flex-col shadow-2xl relative overflow-hidden group">
+        <div className="bg-[#001219] p-10 rounded-3xl text-white flex flex-col shadow-2xl relative overflow-hidden group student-card">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#00cc99]/10 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:bg-[#00cc99]/20 transition-all duration-700"></div>
-          <h2 className="text-[11px] font-black text-[#00cc99] uppercase tracking-[0.2em] mb-6">Pedagogical Feedback</h2>
-          <p className="text-base leading-relaxed italic font-medium text-slate-200">
+          <h2 className="text-[11px] font-black text-[#00cc99] uppercase tracking-[0.2em] mb-6 print:mb-2">Pedagogical Feedback</h2>
+          <p className="text-base leading-relaxed italic font-medium text-slate-200 print:text-xs">
             "{report.generalFeedback}"
           </p>
-          <div className="mt-auto pt-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#00cc99]">
+          <div className="mt-auto pt-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#00cc99] print:pt-4">
              <div className="w-2 h-2 rounded-full bg-[#00cc99] animate-pulse"></div>
              AI Validated Evaluation
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden mb-16">
-        <div className="p-8 border-b border-slate-50 bg-slate-50/40">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden mb-16 logs-container">
+        <div className="p-8 border-b border-slate-50 bg-slate-50/40 print:p-4">
            <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Detailed Analysis Log</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-hidden">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                <th className="px-10 py-5">Item</th>
-                <th className="px-10 py-5">Student Response</th>
-                <th className="px-10 py-5">Standard Answer</th>
-                <th className="px-10 py-5">Score</th>
-                <th className="px-10 py-5">Evaluator Notes</th>
+                <th className="px-10 py-5 print:px-2 print:py-3 w-[10%]">Item</th>
+                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Student Response</th>
+                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Standard Answer</th>
+                <th className="px-10 py-5 print:px-2 print:py-3 w-[15%]">Score</th>
+                <th className="px-10 py-5 print:px-2 print:py-3 w-[25%]">Evaluator Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[13px]">
+            <tbody className="divide-y divide-slate-100 text-[13px] print:text-[10px]">
               {report.grades.map((grade, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-10 py-8 font-black text-[#001219]">Q{grade.questionNumber}</td>
-                  <td className="px-10 py-8 text-slate-700 max-w-xs font-medium leading-relaxed">{grade.studentAnswer}</td>
-                  <td className="px-10 py-8 text-slate-400 italic max-w-xs leading-relaxed">{grade.correctAnswer}</td>
-                  <td className="px-10 py-8">
-                    <div className="font-black text-[#006a4e] bg-[#00cc99]/5 px-3 py-1.5 rounded-lg border border-[#00cc99]/10 inline-block text-[11px] tracking-tight">
+                  <td className="px-10 py-8 print:px-2 print:py-4 font-black text-[#001219]">Q{grade.questionNumber}</td>
+                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-700 font-medium leading-relaxed">{grade.studentAnswer}</td>
+                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-400 italic leading-relaxed">{grade.correctAnswer}</td>
+                  <td className="px-10 py-8 print:px-2 print:py-4">
+                    <div className="font-black text-[#006a4e] bg-[#00cc99]/5 px-3 py-1.5 rounded-lg border border-[#00cc99]/10 inline-block text-[11px] print:text-[9px] tracking-tight">
                       {grade.marksObtained} / {grade.totalMarks}
                     </div>
                   </td>
-                  <td className="px-10 py-8 text-slate-500 italic font-medium leading-relaxed">{grade.feedback}</td>
+                  <td className="px-10 py-8 print:px-2 print:py-4 text-slate-500 italic font-medium leading-relaxed">{grade.feedback}</td>
                 </tr>
               ))}
             </tbody>
