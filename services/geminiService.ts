@@ -31,26 +31,30 @@ export const evaluateAnswerSheet = async (
   // Create a new instance right before use to ensure the latest key is used.
   const ai = new GoogleGenAI({ apiKey });
   
-  // Changed to gemini-2.5-flash to handle quota limits better (less restrictive than Pro)
   const modelName = "gemini-2.5-flash";
 
-  // Use any[] to allow mixed types in the parts array
+  // Refined prompt based on user request to improve accuracy and reduce score hallucinations
   const parts: any[] = [
     {
-      text: `You are an expert academic evaluator. Your task is to perform handwritten answer sheet evaluation.
-      
-      INPUT DATA:
-      - Question Paper: Use this to understand the questions and mark distribution.
-      - Answer Key (Optional): Use this as a reference for correct content.
-      - Student Answer Sheets: These are handwritten. Perform OCR to read them.
-      
-      EVALUATION RULES:
-      1. Be accurate and fair in marking.
-      2. Award marks based on the provided Question Paper's mark scheme.
-      3. If no answer key is provided, use your internal knowledge to judge accuracy.
-      4. Provide helpful feedback for each question.
-      
-      Return the final report strictly in JSON format.`
+      text: `You are a professional academic examiner.
+Your task is to evaluate a student's answer sheet based on a provided question paper and (optional) answer key.
+
+TASKS:
+1. Identify the student's details (Name, Roll Number, etc.) from the first page of the answer sheet.
+2. For every question found in the Question Paper:
+   - Identify the maximum marks allocated to THAT question in the Question Paper.
+   - Locate the corresponding answer in the Student's sheet.
+   - Grade it against the Answer Key (if provided) or your own expert knowledge of the subject.
+   - Provide constructive feedback for each answer.
+3. Calculate the total score and percentage. 
+   CRITICAL: The maxScore MUST be the sum of the marks of all questions present in the Question Paper provided. Do not hallucinate a different total marks if the Question Paper explicitly states the marks for each question.
+4. Provide a general summary of the student's performance.
+
+CRITICAL:
+- Read handwritten text carefully.
+- Return ONLY a valid JSON object following the schema provided. No conversational text.
+- Accuracy is paramount: Ensure every question in the paper is accounted for in the 'grades' array.
+- If a question is not answered, marksObtained should be 0, but the question must still be listed with its totalMarks from the Question Paper.`
     }
   ];
 

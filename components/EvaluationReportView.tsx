@@ -13,7 +13,8 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
     { name: 'Remaining', value: Math.max(0, report.maxScore - report.totalScore) },
   ];
 
-  const COLORS = ['#2563eb', '#f1f5f9'];
+  // Colors: Rich Black and Light Slate
+  const COLORS = ['#001219', '#f1f5f9'];
 
   const barData = report.grades.map(g => ({
     name: `Q${g.questionNumber}`,
@@ -24,83 +25,86 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
   const handleDownload = () => window.print();
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 print-container">
-      <div className="flex flex-col md:flex-row justify-between items-start mb-10 gap-6 no-print">
+    <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 print-container">
+      <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-8 no-print">
         <div>
           <button 
             onClick={onReset}
-            className="text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-wider mb-2 flex items-center gap-2 transition-all"
+            className="text-slate-400 hover:text-[#006a4e] font-black text-[10px] uppercase tracking-[0.2em] mb-3 flex items-center gap-2 transition-all"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             BACK TO UPLOADER
           </button>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Academic Performance Report</h1>
+          <h1 className="text-4xl font-black text-[#001219] tracking-tighter">Academic Transcript</h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <button 
             onClick={handleDownload}
-            className="bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-lg hover:bg-slate-50 transition-all shadow-sm font-bold text-[11px] uppercase tracking-wide flex items-center gap-2"
+            className="bg-white border border-slate-200 text-[#001219] px-6 py-3 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-black text-[11px] uppercase tracking-widest flex items-center gap-3"
           >
-            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg className="w-4 h-4 text-[#00cc99]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            PRINT
+            PRINT RECORD
           </button>
           <button 
             onClick={onReset}
-            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-sm font-bold text-[11px] uppercase tracking-wide"
+            className="bg-[#001219] text-white px-6 py-3 rounded-xl hover:bg-[#006a4e] transition-all shadow-xl font-black text-[11px] uppercase tracking-widest"
           >
             NEW ANALYSIS
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-12 h-12 bg-[#00cc99]/10 text-[#006a4e] rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
-            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Student Profile</h2>
+            <div>
+              <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Student Profile</h2>
+              <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Verified Academic Data</p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-8">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Name</p>
-              <p className="text-sm font-bold text-slate-800 uppercase">{report.studentInfo.name || '---'}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-10">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Name</p>
+              <p className="text-base font-black text-[#001219] uppercase leading-none">{report.studentInfo.name || '---'}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Roll Number</p>
-              <p className="text-sm font-bold text-slate-800">{report.studentInfo.rollNumber || '---'}</p>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Roll Number</p>
+              <p className="text-base font-black text-[#001219] leading-none">{report.studentInfo.rollNumber || '---'}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Subject</p>
-              <p className="text-sm font-bold text-blue-600 uppercase">{report.studentInfo.subject || '---'}</p>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subject</p>
+              <p className="text-base font-black text-[#006a4e] uppercase leading-none">{report.studentInfo.subject || '---'}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Exam Name</p>
-              <p className="text-sm font-medium text-slate-600 uppercase">{report.studentInfo.examName || '---'}</p>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Exam Name</p>
+              <p className="text-sm font-bold text-slate-600 uppercase leading-none">{report.studentInfo.examName || '---'}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Class/Grade</p>
-              <p className="text-sm font-medium text-slate-600">{report.studentInfo.class || '---'}</p>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class/Grade</p>
+              <p className="text-sm font-bold text-slate-600 leading-none">{report.studentInfo.class || '---'}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date</p>
-              <p className="text-sm font-medium text-slate-600">{report.studentInfo.date || '---'}</p>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</p>
+              <p className="text-sm font-bold text-slate-600 leading-none">{report.studentInfo.date || '---'}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-          <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Aggregate Score</h2>
-          <div className="relative w-40 h-40">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl flex flex-col items-center justify-center text-center">
+          <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Performance Metric</h2>
+          <div className="relative w-48 h-48">
              <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData}
-                  innerRadius={65}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={75}
+                  outerRadius={92}
+                  paddingAngle={8}
                   dataKey="value"
                   startAngle={90}
                   endAngle={-270}
@@ -112,71 +116,72 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-black text-slate-900 leading-none">{report.totalScore}</span>
-              <div className="h-[1px] w-6 bg-slate-200 my-1"></div>
-              <span className="text-sm font-bold text-slate-400">{report.maxScore}</span>
+              <span className="text-4xl font-black text-[#001219] leading-none tracking-tighter">{report.totalScore}</span>
+              <div className="h-[2px] w-8 bg-[#001219] my-2"></div>
+              <span className="text-base font-black text-slate-400 tracking-tight">{report.maxScore}</span>
             </div>
           </div>
-          <div className={`mt-6 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider border uppercase ${report.percentage >= 40 ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-red-50 border-red-200 text-red-600'}`}>
-            {report.percentage >= 40 ? 'Qualified' : 'Requires Review'}
+          <div className={`mt-10 px-6 py-2 rounded-full text-[11px] font-black tracking-widest border uppercase ${report.percentage >= 40 ? 'bg-[#00cc99]/10 border-[#00cc99]/20 text-[#006a4e]' : 'bg-red-50 border-red-100 text-red-600'}`}>
+            {report.percentage >= 40 ? 'MERIT SECURED' : 'REVIEW REQUIRED'}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
-          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-8">Question Distribution</h2>
-          <div className="h-64">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
+        <div className="bg-white p-10 rounded-3xl border border-slate-100 shadow-xl lg:col-span-2">
+          <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em] mb-10">Grade Distribution</h2>
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '10px'}} />
-                <Bar dataKey="score" fill="#2563eb" radius={[3, 3, 0, 0]} barSize={28} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 900}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: 900}} />
+                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{backgroundColor: '#001219', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '11px', fontWeight: '900', padding: '12px'}} itemStyle={{color: '#fff'}} />
+                <Bar dataKey="score" fill="#006a4e" radius={[6, 6, 0, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-blue-600 p-8 rounded-2xl text-white flex flex-col shadow-lg">
-          <h2 className="text-[10px] font-bold text-blue-100 uppercase tracking-widest mb-4">Evaluator Summary</h2>
-          <p className="text-sm leading-relaxed italic font-medium">
+        <div className="bg-[#001219] p-10 rounded-3xl text-white flex flex-col shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#00cc99]/10 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:bg-[#00cc99]/20 transition-all duration-700"></div>
+          <h2 className="text-[11px] font-black text-[#00cc99] uppercase tracking-[0.2em] mb-6">Pedagogical Feedback</h2>
+          <p className="text-base leading-relaxed italic font-medium text-slate-200">
             "{report.generalFeedback}"
           </p>
-          <div className="mt-auto pt-6 flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-blue-200">
-             <div className="w-1.5 h-1.5 rounded-full bg-blue-100"></div>
-             AI Certified Analysis
+          <div className="mt-auto pt-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#00cc99]">
+             <div className="w-2 h-2 rounded-full bg-[#00cc99] animate-pulse"></div>
+             AI Validated Evaluation
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-12">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-           <h2 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Question Wise Analysis</h2>
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden mb-16">
+        <div className="p-8 border-b border-slate-50 bg-slate-50/40">
+           <h2 className="text-[11px] font-black text-[#001219] uppercase tracking-[0.2em]">Detailed Analysis Log</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 text-slate-400 text-[9px] font-bold uppercase tracking-wider">
-                <th className="px-8 py-4">No.</th>
-                <th className="px-8 py-4">Student Answer</th>
-                <th className="px-8 py-4">Model Answer</th>
-                <th className="px-8 py-4">Score</th>
-                <th className="px-8 py-4">Feedback</th>
+              <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                <th className="px-10 py-5">Item</th>
+                <th className="px-10 py-5">Student Response</th>
+                <th className="px-10 py-5">Standard Answer</th>
+                <th className="px-10 py-5">Score</th>
+                <th className="px-10 py-5">Evaluator Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100 text-[13px]">
               {report.grades.map((grade, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-8 py-6 font-bold text-slate-900">{grade.questionNumber}</td>
-                  <td className="px-8 py-6 text-slate-600 max-w-xs leading-relaxed">{grade.studentAnswer}</td>
-                  <td className="px-8 py-6 text-slate-400 italic max-w-xs leading-relaxed">{grade.correctAnswer}</td>
-                  <td className="px-8 py-6">
-                    <div className="font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 inline-block text-[10px]">
+                  <td className="px-10 py-8 font-black text-[#001219]">Q{grade.questionNumber}</td>
+                  <td className="px-10 py-8 text-slate-700 max-w-xs font-medium leading-relaxed">{grade.studentAnswer}</td>
+                  <td className="px-10 py-8 text-slate-400 italic max-w-xs leading-relaxed">{grade.correctAnswer}</td>
+                  <td className="px-10 py-8">
+                    <div className="font-black text-[#006a4e] bg-[#00cc99]/5 px-3 py-1.5 rounded-lg border border-[#00cc99]/10 inline-block text-[11px] tracking-tight">
                       {grade.marksObtained} / {grade.totalMarks}
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-slate-500 italic text-[11px]">{grade.feedback}</td>
+                  <td className="px-10 py-8 text-slate-500 italic font-medium leading-relaxed">{grade.feedback}</td>
                 </tr>
               ))}
             </tbody>
@@ -184,8 +189,8 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
         </div>
       </div>
 
-      <div className="hidden print:block text-center text-slate-200 text-[8px] font-bold uppercase tracking-[0.5em] py-10">
-        EduGrade AI Transcript • Certified Record • {new Date().toLocaleDateString()}
+      <div className="hidden print:block text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.5em] py-16">
+        EduGrade AI Official Transcript • {new Date().toLocaleDateString()}
       </div>
     </div>
   );

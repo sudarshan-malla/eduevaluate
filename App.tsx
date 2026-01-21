@@ -51,7 +51,6 @@ const App: React.FC = () => {
   const handleOpenKeySelector = async () => {
     if (window.aistudio?.openSelectKey) {
       await window.aistudio.openSelectKey();
-      // Assume success as per instructions
       setHasApiKey(true);
       setError(null);
     }
@@ -159,36 +158,36 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100">
-      <nav className="border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-50 no-print">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={startNew}>
-          <div className="w-9 h-9 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">E</div>
+    <div className="min-h-screen bg-[#fafafa] text-[#001219] selection:bg-[#00cc99]/30">
+      <nav className="border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-xl z-50 no-print">
+        <div className="flex items-center gap-4 cursor-pointer group" onClick={startNew}>
+          <div className="w-10 h-10 bg-[#001219] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:bg-[#006a4e] transition-colors">E</div>
           <div className="leading-tight">
-            <span className="text-base font-bold text-slate-900 block">EduGrade AI</span>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Evaluation System</span>
+            <span className="text-lg font-black text-[#001219] block tracking-tight">EduGrade AI</span>
+            <span className="text-[10px] text-[#006a4e] font-bold uppercase tracking-widest">Premium Evaluator</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {!hasApiKey && (
             <button 
               onClick={handleOpenKeySelector}
-              className="px-4 py-2 text-[10px] font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm"
+              className="px-4 py-2.5 text-[10px] font-black text-white bg-[#001219] rounded-lg hover:bg-[#006a4e] transition-all flex items-center gap-2 shadow-sm"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
               SETUP API KEY
             </button>
           )}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
             <button 
               onClick={() => setViewMode('uploader')}
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'uploader' || viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-wider ${viewMode === 'uploader' || viewMode === 'report' ? 'bg-white text-[#001219] shadow-sm' : 'text-slate-500 hover:text-[#001219]'}`}
             >
               EVALUATE
             </button>
             <button 
               onClick={() => setViewMode('dashboard')}
-              className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all tracking-wider ${viewMode === 'dashboard' ? 'bg-white text-[#001219] shadow-sm' : 'text-slate-500 hover:text-[#001219]'}`}
             >
               RECORDS
             </button>
@@ -196,20 +195,20 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-6 py-16">
         {viewMode === 'uploader' && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
-                Automatic Answer Sheet Evaluation
+          <div className="animate-in fade-in slide-in-from-bottom-3 duration-700">
+            <div className="text-center mb-16">
+              <h1 className="text-5xl font-black text-[#001219] mb-6 tracking-tighter leading-none">
+                Academic Answer <br/> <span className="text-[#00cc99]">Evaluation System.</span>
               </h1>
-              <p className="text-slate-500 font-medium max-w-lg mx-auto leading-relaxed">
-                Scan your question paper and student answers to get an automated grading report.
+              <p className="text-slate-500 font-medium max-w-xl mx-auto leading-relaxed text-lg">
+                Utilize advanced vision AI to evaluate handwritten student work with professional precision and instant grading.
               </p>
             </div>
 
-            <div className="bg-white shadow-sm rounded-2xl p-8 border border-slate-200 space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white shadow-2xl rounded-3xl p-10 border border-slate-100 space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <FileUpload label="Question Paper" required files={qpFiles} onFilesSelected={handleFileSelection('qp')} />
                 <FileUpload label="Answer Key (Optional)" files={keyFiles} onFilesSelected={handleFileSelection('key')} />
               </div>
@@ -217,35 +216,37 @@ const App: React.FC = () => {
               <FileUpload label="Student Answer Sheet(s)" required files={studentFiles} onFilesSelected={handleFileSelection('student')} />
 
               {error && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium flex items-center gap-3 animate-shake">
-                   <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                   <div className="flex flex-col">
+                <div className="p-5 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold flex items-center gap-4 animate-shake">
+                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                   </div>
+                   <div className="flex flex-col leading-tight">
                       <span>{error}</span>
                       {!hasApiKey && (
-                        <button onClick={handleOpenKeySelector} className="text-[10px] underline mt-1 font-bold">Configure API Key</button>
+                        <button onClick={handleOpenKeySelector} className="text-[11px] underline mt-1.5 font-black uppercase tracking-wider text-red-700">Configure API Key</button>
                       )}
                    </div>
                 </div>
               )}
 
-              <div className="pt-4">
+              <div className="pt-6">
                 <button
                   onClick={runEvaluation}
                   disabled={isLoading || qpFiles.length === 0 || studentFiles.length === 0}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${
+                  className={`w-full py-6 rounded-2xl font-black text-xl transition-all flex items-center justify-center gap-4 shadow-xl ${
                     isLoading 
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99] shadow-md shadow-blue-200'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
+                    : 'bg-[#001219] text-white hover:bg-[#006a4e] active:scale-[0.98] shadow-green-100'
                   }`}
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
-                      GRADING IN PROGRESS...
+                      <div className="w-6 h-6 border-3 border-slate-300 border-t-[#00cc99] rounded-full animate-spin"></div>
+                      PROCESSING EVALUATION...
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       START EVALUATION
                     </>
                   )}
@@ -269,8 +270,10 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-12 mt-12 text-center no-print border-t border-slate-100">
-        <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">&copy; 2025 EduGrade AI</p>
+      <footer className="py-20 mt-20 text-center no-print border-t border-slate-100">
+        <div className="w-12 h-1 bg-slate-200 mx-auto mb-8 rounded-full"></div>
+        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] mb-2">&copy; 2025 EduGrade AI</p>
+        <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest">Professional Academic Solutions</p>
       </footer>
     </div>
   );
