@@ -42,15 +42,13 @@ TASKS:
    - List every question and identify its maximum marks.
    - SUM ALL INDIVIDUAL MARKS to get the final "maxScore". 
    - DO NOT assume or hallucinate a generic total (like 70 or 100). If the paper sums to 80, the maxScore MUST be 80.
-3. EVALUATION PHILOSOPHY:
-   - Evaluate with effectiveness and fairness.
-   - Be "less strict" (lenient) where the student demonstrates a clear understanding but might have minor grammatical or technical errors.
-   - Award partial marks for partially correct answers based on the depth of the answer.
-4. For every question found in the Question Paper:
+3. For every question found in the Question Paper:
+   - Locate the corresponding answer in the Student's sheet.
+   - Grade it against the Answer Key (if provided) or your own expert knowledge of the subject.
+   - Provide constructive feedback for each answer.
    - EXHAUSTIVELY search through ALL provided student answer pages for the corresponding answer. Do not miss any questions (like Question 6, sub-parts, etc.). Ensure you check every page of the student's work.
-   - Grade it against the marks provided for each question in the question paper and Answer key (if provided) along with your own expert knowledge.
-   - Provide encouraging and constructive feedback for each answer.
-5. Calculate the totalScore (sum of obtained marks) and the percentage.
+4. Calculate the total score and percentage.
+5. Provide a general summary of the student's performance.
 
 CRITICAL:
 - Read handwritten text carefully.
