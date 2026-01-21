@@ -48,7 +48,7 @@ TASKS:
    - Award partial marks for partially correct answers based on the depth of the answer.
 4. For every question found in the Question Paper:
    - EXHAUSTIVELY search through ALL provided student answer pages for the corresponding answer. Do not miss any questions (like Question 6, sub-parts, etc.). Ensure you check every page of the student's work.
-   - Grade it against the Answer Key (if provided) or your own expert knowledge.
+   - Grade it against the marks provided for each question in the question paper and Answer key (if provided) along with your own expert knowledge.
    - Provide encouraging and constructive feedback for each answer.
 5. Calculate the totalScore (sum of obtained marks) and the percentage.
 
