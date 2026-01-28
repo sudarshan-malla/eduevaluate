@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { EvaluationReport } from '../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
@@ -267,7 +268,7 @@ const EvaluationReportView: React.FC<EvaluationReportViewProps> = ({ report, onR
       </div>
 
       <div className="hidden print:block text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.5em] py-16">
-        EduGrade AI Official Transcript • {new Date().toLocaleDateString()}
+        Next-Gen Eval Official Transcript • {new Date().toLocaleDateString()}
       </div>
     </div>
   );

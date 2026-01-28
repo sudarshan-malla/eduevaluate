@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import FileUpload from './components/FileUpload';
 import EvaluationReportView from './components/EvaluationReportView';
@@ -6,7 +7,7 @@ import { UploadedFile, EvaluationReport, HistoryItem } from './types';
 import { evaluateAnswerSheet } from './services/geminiService';
 
 const MAX_FILE_SIZE_MB = 3;
-const STORAGE_KEY = 'edugrade_history_v4';
+const STORAGE_KEY = 'nextgen_eval_history_v1';
 
 type ViewMode = 'uploader' | 'dashboard' | 'report';
 
@@ -161,9 +162,9 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-[#fafafa] text-[#001219] selection:bg-[#00cc99]/30">
       <nav className="border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-xl z-50 no-print">
         <div className="flex items-center gap-4 cursor-pointer group" onClick={startNew}>
-          <div className="w-10 h-10 bg-[#001219] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:bg-[#006a4e] transition-colors">E</div>
+          <div className="w-10 h-10 bg-[#001219] rounded-lg flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:bg-[#006a4e] transition-colors">N</div>
           <div className="leading-tight">
-            <span className="text-lg font-black text-[#001219] block tracking-tight">EduGrade AI</span>
+            <span className="text-lg font-black text-[#001219] block tracking-tight">Next-Gen Eval</span>
             <span className="text-[10px] text-[#006a4e] font-bold uppercase tracking-widest">Premium Evaluator</span>
           </div>
         </div>
@@ -272,8 +273,9 @@ const App: React.FC = () => {
 
       <footer className="py-20 mt-20 text-center no-print border-t border-slate-100">
         <div className="w-12 h-1 bg-slate-200 mx-auto mb-8 rounded-full"></div>
-        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] mb-2">&copy; 2025 EduGrade AI</p>
-        <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest">Professional Academic Solutions</p>
+        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] mb-2">&copy; 2025 Next-Gen Eval</p>
+        <p className="text-slate-300 text-[9px] font-bold uppercase tracking-widest mb-4">Professional Academic Solutions</p>
+        <p className="text-[#006a4e] text-[10px] font-black uppercase tracking-[0.2em]">Developed From the minds of Aarshiv AI</p>
       </footer>
     </div>
   );
